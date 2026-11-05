@@ -1,0 +1,131 @@
+id: colorectal
+version: 0.2.0
+status: beta
+name: Colorectal Cancer
+short_name: Colorectal
+tissue: colon
+data_richness: high
+color: "#7FB77E"
+description: >
+  Colorectal cancer spatial atlas. Covers tumor glands, invasive front,
+  lymphoid aggregates, normal mucosa, stroma and necrosis.
+aliases: [CRC, colon cancer, rectal cancer]
+reference:
+  scrna_sources:
+    - Tabula Sapiens (colon)
+    - Human Cell Atlas colon
+    - TCGA-COAD/READ derived signatures
+  spatial_sources:
+    - 10x Genomics Visium human colorectal cancer
+    - HTAN colon atlas
+  minimum_samples: 3
+cell_types:
+  - id: epithelial
+    name: Epithelial
+    markers: [EPCAM, KRT8, KRT18, CDH1]
+    color: "#A8D5A2"
+  - id: tumor
+    name: Tumor epithelium
+    markers: [CEACAM5, LGR5, MYC, AXIN2, ASCL2]
+    color: "#4E9F5A"
+  - id: goblet
+    name: Goblet cell
+    markers: [MUC2, TFF3, SPDEF, ATOH1]
+    color: "#B7D9A8"
+  - id: fibroblast
+    name: Fibroblast / CAF
+    markers: [COL1A1, COL1A2, DCN, PDGFRB]
+    color: "#C8B08A"
+  - id: endothelial
+    name: Endothelial
+    markers: [PECAM1, VWF, CDH5]
+    color: "#D96C5F"
+  - id: t_cell
+    name: T cell
+    markers: [CD3D, CD3E, CD2, CD8A, TRAC]
+    color: "#6FA8DC"
+  - id: b_cell
+    name: B cell
+    markers: [CD79A, MS4A1, CD19, IGHM]
+    color: "#8E7CC3"
+  - id: macrophage
+    name: Macrophage
+    markers: [CD68, CD163, CSF1R, C1QA]
+    color: "#E6A96B"
+  - id: smooth_muscle
+    name: Smooth muscle
+    markers: [ACTA2, MYH11, DES]
+    color: "#B58B7A"
+zones:
+  - id: tumor_core
+    name: Tumor core
+    markers: [CEACAM5, LGR5, EPCAM]
+    color: "#FF6B6B"
+    description: Malignant glandular epithelium.
+  - id: invasive_front
+    name: Invasive front
+    markers: [CEACAM5, COL1A1, CD3D]
+    color: "#FF9F43"
+    description: Tumor-stroma interface.
+  - id: lymphoid_aggregate
+    name: Lymphoid aggregate
+    markers: [CD3D, CD79A, MS4A1]
+    color: "#6FA8DC"
+    description: Lymphoid aggregate / TLS candidate.
+  - id: normal_mucosa
+    name: Normal mucosa
+    markers: [MUC2, TFF3, EPCAM]
+    color: "#9AD0C2"
+    description: Benign crypt architecture.
+  - id: stroma
+    name: Stroma
+    markers: [COL1A1, DCN, PDGFRB]
+    color: "#C8B08A"
+    description: Desmoplastic stroma.
+  - id: necrosis
+    name: Necrosis / hypoxia
+    markers: [VEGFA, CA9, SLC2A1]
+    color: "#5C5C5C"
+    description: Hypoxic / necrotic region.
+targets:
+  - gene: EGFR
+    name: EGFR
+    rationale: Established colorectal target.
+    evidence_level: established
+  - gene: VEGFA
+    name: VEGF-A
+    rationale: Angiogenesis target.
+    evidence_level: established
+  - gene: CD274
+    name: PD-L1
+    rationale: Immune checkpoint context.
+    evidence_level: emerging
+  - gene: BRAF
+    name: BRAF
+    rationale: MAPK pathway; V600E subset.
+    evidence_level: established
+  - gene: KRAS
+    name: KRAS
+    rationale: MAPK pathway; resistance context.
+    evidence_level: established
+ligand_receptor_pairs:
+  - { ligand: CD274, receptor: PDCD1, sender: macrophage, receiver: t_cell, category: "immune checkpoint" }
+  - { ligand: CXCL12, receptor: CXCR4, sender: fibroblast, receiver: tumor, category: "chemokine" }
+  - { ligand: VEGFA, receptor: KDR, sender: tumor, receiver: endothelial, category: "angiogenesis" }
+  - { ligand: SPP1, receptor: CD44, sender: macrophage, receiver: tumor, category: "myeloid–tumor" }
+  - { ligand: TGFB1, receptor: TGFBR2, sender: tumor, receiver: fibroblast, category: "stromal activation" }
+  - { ligand: CSF1, receptor: CSF1R, sender: tumor, receiver: macrophage, category: "myeloid recruitment" }
+  - { ligand: EREG, receptor: EGFR, sender: tumor, receiver: tumor, category: "growth factor" }
+  - { ligand: CXCL13, receptor: CXCR5, sender: t_cell, receiver: b_cell, category: "lymphoid aggregate" }
+not_assessed:
+  - "MSI/MMR status"
+  - "KRAS/NRAS/BRAF mutation status"
+  - "TNM stage"
+  - "Patient prognosis or treatment response"
+report:
+  title: Colorectal Cancer Spatial Atlas
+  sections: [summary, qc, composition, domains, targets, limitations]
+validation:
+  metrics: {}
+  last_run: null
+  approved_by: null

@@ -1,0 +1,139 @@
+id: glioblastoma
+version: 0.2.0
+status: beta
+name: Glioblastoma
+short_name: GBM
+tissue: brain
+data_richness: medium
+color: "#C95B7A"
+description: >
+  Glioblastoma spatial atlas. Covers pseudopalisading necrosis, microvascular
+  proliferation, leading edge, infiltrative tumor and normal brain; four zones
+  are checked against the Ivy GAP anatomic atlas on real samples.
+aliases: [GBM, glioblastoma multiforme]
+reference:
+  scrna_sources:
+    - GBM scRNA-seq atlases
+    - Human Cell Atlas brain
+    - TCGA-GBM derived signatures
+  spatial_sources:
+    - 10x Genomics Visium human glioblastoma
+    - GSE237183
+    - GSE331374
+  minimum_samples: 3
+cell_types:
+  - id: tumor
+    name: Tumor / glioma
+    markers: [GFAP, SOX2, OLIG2, EGFR]
+    color: "#C95B7A"
+  - id: proliferating
+    name: Proliferating tumor
+    markers: [MKI67, TOP2A, CCNB1]
+    color: "#FF6B6B"
+  - id: astrocyte
+    name: Astrocyte
+    markers: [GFAP, AQP4, ALDH1L1]
+    color: "#B7A6D9"
+  - id: oligodendrocyte
+    name: Oligodendrocyte
+    markers: [MBP, PLP1, MOG]
+    color: "#8E7CC3"
+  - id: immune
+    name: Immune / microglia
+    markers: [PTPRC, CD3D, CD68, CD163]
+    color: "#6FA8DC"
+  - id: vascular
+    name: Vascular
+    markers: [PECAM1, VWF, CLDN5]
+    color: "#D96C5F"
+  - id: fibroblast
+    name: Fibroblast / pericyte
+    markers: [COL1A1, DCN, PDGFRB]
+    color: "#C8B08A"
+zones:
+  - id: pseudopalisading_necrosis
+    name: Pseudopalisading necrosis
+    markers: [CA9, VEGFA, NDRG1, GFAP]
+    color: "#5C5C5C"
+    description: Hypoxic necrosis with pseudopalisading cells.
+  - id: microvascular_proliferation
+    name: Microvascular proliferation
+    markers: [PECAM1, VWF, CLDN5]
+    color: "#D96C5F"
+    description: Glomeruloid vascular structures.
+  - id: leading_edge
+    name: Leading edge
+    markers: [GFAP, SOX2, COL1A1]
+    color: "#FF9F43"
+    description: Infiltrative tumor margin.
+  - id: infiltrative_tumor
+    name: Infiltrative tumor
+    markers: [GFAP, SOX2, OLIG2]
+    color: "#FF6B6B"
+    description: Diffusely infiltrating tumor.
+  - id: normal_brain
+    name: Normal brain
+    markers: [MBP, PLP1, AQP4]
+    color: "#9AD0C2"
+    description: Preserved brain parenchyma.
+targets:
+  - gene: EGFR
+    name: EGFR
+    rationale: Amplification / variant III subset.
+    evidence_level: established
+  - gene: PDGFRA
+    name: PDGFRA
+    rationale: Receptor tyrosine kinase subset.
+    evidence_level: emerging
+  - gene: IDH1
+    name: IDH1
+    rationale: Mutant IDH defines a distinct glioma group; RNA expression does not reveal mutation status.
+    evidence_level: established
+  - gene: MGMT
+    name: MGMT
+    rationale: Promoter methylation (not RNA level) is the clinical biomarker; expression shown for research context only.
+    evidence_level: established
+  - gene: VEGFA
+    name: VEGF-A
+    rationale: Angiogenesis / hypoxia context.
+    evidence_level: established
+  - gene: CD274
+    name: PD-L1
+    rationale: Immune checkpoint context.
+    evidence_level: emerging
+atlas_reference:
+  name: Ivy Glioblastoma Atlas Project (ISH)
+  citation: Puchalski RB et al. An anatomic transcriptional atlas of human glioblastoma. Science 2018;360(6389):660-663. PMID 29748285.
+  url: https://glioblastoma.alleninstitute.org/
+  file: references/ivygap_gbm_ish.json
+  license_status: review_pending
+  # Ivy GAP "cellular tumor" (ct) has no matching zone yet: adding one dropped the
+  # synthetic domain ARI from 0.60 to 0.48 (below the 0.55 gate). Revisit with real data.
+  zone_map:
+    leading_edge: le
+    infiltrative_tumor: it
+    pseudopalisading_necrosis: ctpan
+    microvascular_proliferation: ctmvp
+ligand_receptor_pairs:
+  - { ligand: VEGFA, receptor: KDR, sender: tumor, receiver: vascular, category: "angiogenesis" }
+  - { ligand: SPP1, receptor: CD44, sender: immune, receiver: tumor, category: "myeloid–tumor" }
+  - { ligand: CD274, receptor: PDCD1, sender: immune, receiver: immune, category: "immune checkpoint" }
+  - { ligand: MIF, receptor: CD74, sender: tumor, receiver: immune, category: "myeloid–tumor" }
+  - { ligand: CXCL12, receptor: CXCR4, sender: vascular, receiver: tumor, category: "chemokine" }
+  - { ligand: IL10, receptor: IL10RA, sender: immune, receiver: immune, category: "immunosuppression" }
+  - { ligand: TGFB1, receptor: TGFBR1, sender: tumor, receiver: immune, category: "immunosuppression" }
+  - { ligand: EGF, receptor: EGFR, sender: tumor, receiver: tumor, category: "growth factor" }
+  - { ligand: CSF1, receptor: CSF1R, sender: tumor, receiver: immune, category: "myeloid recruitment" }
+  - { ligand: PDGFB, receptor: PDGFRB, sender: vascular, receiver: fibroblast, category: "pericyte recruitment" }
+not_assessed:
+  - "IDH1/IDH2 mutation status (requires sequencing or IHC)"
+  - "MGMT promoter methylation (RNA level does not reflect it)"
+  - "WHO CNS grade or integrated diagnosis"
+  - "Patient prognosis, survival, or treatment response"
+report:
+  title: Glioblastoma Spatial Atlas
+  sections: [summary, qc, composition, domains, targets, limitations]
+validation:
+  metrics: {}
+  last_run: null
+  approved_by: null

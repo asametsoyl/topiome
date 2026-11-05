@@ -1,0 +1,25 @@
+{
+  "name": "topiome",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Topiome \u2014 spatial disease atlas platform",
+  "scripts": {
+    "dev": "concurrently -n web,api -c cyan,magenta \"npm run dev:web\" \"npm run dev:api\"",
+    "dev:web": "npm --prefix apps/web run dev",
+    "dev:api": "cd apps/api && uv run uvicorn app.main:app --reload --port 8000",
+    "build": "npm --prefix apps/web run build",
+    "start": "npm --prefix apps/web run start",
+    "seed": "cd apps/api && uv run python -m app.seed",
+    "test:api": "cd apps/api && uv run --extra dev pytest",
+    "typecheck": "npm --prefix apps/web run typecheck",
+    "setup": "bash scripts/setup.sh",
+    "test:analysis": "cd apps/api && uv run --extra dev pytest ../../packages/analysis/tests",
+    "test": "npm run test:analysis && npm run test:api",
+    "lint": "npm --prefix apps/web run lint && cd apps/api && uv run --extra dev ruff check app migrations tests ../../packages/analysis",
+    "migrate": "cd apps/api && uv run python -m app.migrate upgrade head",
+    "validate:packs": "cd apps/api && uv run python -m app.validate_packs"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

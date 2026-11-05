@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ pack.name }} Spatial Atlas — {{ run.id[:8] }}</title>
+  <style>
+    :root {
+      --ink: #07100c;
+      --bone: #f3f0e8;
+      --muted: #8a938c;
+      --line: #232b26;
+      --acid: #c8f751;
+      --teal: #5fe0c0;
+      --amber: #ffb86b;
+      --coral: #ff6b6b;
+      --card: #0d1511;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--ink);
+      color: var(--bone);
+      font-family: ui-sans-serif, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .page { max-width: 920px; margin: 0 auto; padding: 48px 40px 64px; }
+    .top { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--line); padding-bottom: 20px; }
+    .brand { font-size: 18px; letter-spacing: -0.03em; font-weight: 700; }
+    .brand span { color: var(--acid); }
+    .ruo { border: 1px solid var(--amber); color: var(--amber); padding: 4px 8px; border-radius: 999px; font-size: 9px; letter-spacing: .08em; text-transform: uppercase; }
+    h1 { font-size: 34px; line-height: 1.05; letter-spacing: -0.04em; margin: 28px 0 8px; font-weight: 600; }
+    .sub { color: var(--muted); margin: 0 0 28px; }
+    .meta { display: flex; gap: 24px; flex-wrap: wrap; color: var(--muted); font-size: 10px; margin-bottom: 28px; }
+    .meta b { color: var(--bone); font-weight: 500; }
+    .grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 28px; }
+    .stat { border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 12px; }
+    .stat .k { color: var(--muted); font-size: 9px; text-transform: uppercase; letter-spacing: .06em; }
+    .stat .v { font-size: 20px; letter-spacing: -0.03em; margin-top: 4px; }
+    h2 { font-size: 15px; letter-spacing: -0.01em; margin: 32px 0 12px; border-top: 1px solid var(--line); padding-top: 18px; }
+    h2 .num { color: var(--acid); font-family: ui-monospace, monospace; font-size: 10px; margin-right: 8px; }
+    .map-wrap { border: 1px solid var(--line); border-radius: 12px; background: #090f0b; padding: 12px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-top: 10px; color: var(--muted); font-size: 10px; }
+    .legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th { text-align: left; color: var(--muted); font-weight: 500; font-size: 9px; text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--line); padding: 6px 8px; }
+    td { border-bottom: 1px solid #161d19; padding: 7px 8px; vertical-align: top; }
+    .bar { height: 5px; border-radius: 99px; background: #1a221d; overflow: hidden; min-width: 80px; }
+    .bar > span { display: block; height: 100%; background: var(--teal); }
+    .badge { display: inline-block; border: 1px solid var(--line); border-radius: 99px; padding: 1px 7px; font-size: 9px; color: var(--muted); }
+    .badge.established { border-color: var(--teal); color: var(--teal); }
+    .badge.emerging { border-color: var(--amber); color: var(--amber); }
+    .badge.exploratory { border-color: var(--muted); }
+    .warn { border: 1px solid #3a2a18; background: #1a140c; color: var(--amber); border-radius: 10px; padding: 12px 14px; font-size: 11px; }
+    .warn ul { margin: 6px 0 0; padding-left: 18px; }
+    .muted { color: var(--muted); }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .approval { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 11px; margin-bottom: 28px; }
+    .approval.draft { border-color: var(--amber); color: var(--amber); background: #1a140c; }
+    .approval.approved { border-color: var(--teal); color: var(--teal); }
+    .approval b { color: var(--bone); font-weight: 500; }
+    .mono { font-family: ui-monospace, monospace; font-size: 10px; word-break: break-all; }
+    .limits { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 11px; margin-bottom: 28px; }
+    .limits ul { margin: 6px 0 0; padding-left: 18px; color: var(--muted); }
+    .sig { color: var(--teal); }
+    .ns { color: var(--muted); }
+    .footer { margin-top: 40px; border-top: 1px solid var(--line); padding-top: 16px; color: var(--muted); font-size: 9px; }
+    .footer b { color: var(--bone); }
+    @media print {
+      body { background: #fff; color: #111; }
+      .page { max-width: none; padding: 20px; }
+      .stat, .map-wrap { background: #fff; border-color: #ddd; }
+      .ruo { color: #8a5a00; border-color: #8a5a00; }
+      h2 { border-color: #ddd; }
+      td, th { border-color: #eee; }
+      .bar { background: #eee; }
+      .footer { border-color: #ddd; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="top">
+    <div class="brand">topi<span>ome</span></div>
+    <div class="ruo">Research Use Only</div>
+  </div>
+
+  <h1>{{ pack.name }}<br />Spatial Atlas</h1>
+  <p class="sub">
+    Computational tissue map generated from spatial transcriptomics.
+    This report is a research artifact, not a clinical document.
+  </p>
+
+  <div class="meta">
+    <div>Run <b>{{ run.id[:8] }}</b></div>
+    <div>Pack <b>{{ pack.id }} v{{ pack.version }}</b></div>
+    <div>Pipeline <b>{{ run.pipeline_version }}</b></div>
+    <div>Created <b>{{ generated_at }}</b></div>
+  </div>
+
+  {% if approval %}
+  <div class="approval approved">
+    Approved for research use by <b>{{ approval.by }}</b> on <b>{{ approval.at }}</b>.
+    {% if approval.note %}<br />Note: {{ approval.note }}{% endif %}
+  </div>
+  {% else %}
+  <div class="approval draft">
+    <b>Draft — not approved.</b> This report has not been reviewed and approved by a person.
+    It cannot be exported until it is approved in Topiome.
+  </div>
+  {% endif %}
+
+  {% if not_assessed %}
+  <div class="limits">
+    <b>Not assessed by this analysis.</b> Spatial transcriptomics cannot establish the following; do not infer them from this report:
+    <ul>{% for item in not_assessed %}<li>{{ item }}</li>{% endfor %}</ul>
+  </div>
+  {% endif %}
+
+  <div class="grid">
+    <div class="stat"><div class="k">Spots</div><div class="v">{{ summary.n_spots }}</div></div>
+    <div class="stat"><div class="k">QC passed</div><div class="v">{{ summary.passed_spots }}</div></div>
+    <div class="stat"><div class="k">Genes</div><div class="v">{{ summary.n_genes }}</div></div>
+    <div class="stat"><div class="k">Domains</div><div class="v">{{ summary.n_domains }}</div></div>
+    <div class="stat"><div class="k">Cell types</div><div class="v">{{ summary.n_cell_types }}</div></div>
+    <div class="stat"><div class="k">Runtime</div><div class="v">{{ summary.runtime_seconds }}s</div></div>
+  </div>
+
+  <h2><span class="num">01</span> Spatial domain map</h2>
+  <div class="map-wrap">
+    {{ map_svg | safe }}
+    <div class="legend">
+      {% for d in domains %}
+      <span><i style="background:{{ d.color }}"></i>{{ d.name }} · {{ d.count }}</span>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="two">
+    <div>
+      <h2><span class="num">02</span> Cell composition</h2>
+      <table>
+        <thead><tr><th>Cell type</th><th>Mean</th><th></th></tr></thead>
+        <tbody>
+        {% for ct in composition %}
+          <tr>
+            <td>{{ ct.name }}</td>
+            <td>{{ (ct.value * 100) | round(1) }}%</td>
+            <td><div class="bar"><span style="width:{{ (ct.value * 100) | round(1) }}%; background:{{ ct.color }}"></span></div></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <h2><span class="num">03</span> Domain summary</h2>
+      <table>
+        <thead><tr><th>Domain</th><th>Spots</th><th>Uncertainty</th></tr></thead>
+        <tbody>
+        {% for d in domains %}
+          <tr>
+            <td><span style="color:{{ d.color }}">●</span> {{ d.name }}</td>
+            <td>{{ d.count }} ({{ d.pct }}%)</td>
+            <td>{{ d.mean_uncertainty }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <h2><span class="num">04</span> Target evidence</h2>
+  <table>
+    <thead><tr><th>Gene</th><th>Target</th><th>Evidence</th><th>Score</th><th>Top domain</th></tr></thead>
+    <tbody>
+    {% for t in targets %}
+      <tr>
+        <td><b>{{ t.gene }}</b></td>
+        <td>{{ t.name }}<div class="muted">{{ t.rationale }}</div></td>
+        <td><span class="badge {{ t.evidence_level }}">{{ t.evidence_level }}</span></td>
+        <td>{{ t.overall_score }}</td>
+        <td>{{ t.top_domain }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="muted" style="font-size:10px; margin-top:8px;">
+    Scores are research prioritization signals based on spatial expression. They are not treatment recommendations.
+  </p>
+
+  {% if communication %}
+  <h2><span class="num">05</span> Cell–cell communication (ligand–receptor)</h2>
+  <table>
+    <thead><tr><th>Pair</th><th>Sender → receiver</th><th>Score</th><th>q (BH)</th><th>Strongest domain</th></tr></thead>
+    <tbody>
+    {% for c in communication %}
+      <tr>
+        <td>{{ c.name }}{% if c.category %} <span class="muted">· {{ c.category }}</span>{% endif %}</td>
+        <td>{{ c.sender_name }} → {{ c.receiver_name }}</td>
+        {% if c.tested %}
+        <td>{{ c.score }}</td>
+        <td class="{{ 'sig' if c.significant else 'ns' }}">{{ c.q_value }}</td>
+        <td>{{ c.top_domain_name or "—" }}</td>
+        {% else %}
+        <td colspan="3" class="muted">Not tested — missing {{ c.missing | join(", ") }}</td>
+        {% endif %}
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="muted" style="font-size:10px;">
+    Score = same-spot plus neighbour co-expression of ligand (weighted by sender abundance) and receptor
+    (weighted by receiver abundance). q-values come from a spatial permutation test with Benjamini–Hochberg
+    correction. Co-expression is evidence of possible signalling, not proof of it.
+  </p>
+  {% endif %}
+
+  <h2><span class="num">06</span> Quality control</h2>
+  <table>
+    <tbody>
+      <tr><td>Spots</td><td>{{ qc.n_spots }}</td><td>Passed</td><td>{{ qc.passed_spots }}</td></tr>
+      <tr><td>Median counts</td><td>{{ qc.median_counts }}</td><td>Median genes</td><td>{{ qc.median_genes }}</td></tr>
+      <tr><td>Median mito fraction</td><td>{{ (qc.median_mito_fraction * 100) | round(2) }}%</td><td>Modeled spots</td><td>{{ summary.modeled_spots }}</td></tr>
+    </tbody>
+  </table>
+
+  <h2><span class="num">07</span> Reliability checks</h2>
+  <table>
+    <tbody>
+      {% if concordance %}
+      <tr><td>Deconvolution method agreement</td><td>{{ concordance.mean_spot_agreement }} mean per spot (1 = identical) · cell-type Pearson {{ concordance.mean_cell_type_pearson if concordance.mean_cell_type_pearson is not none else "—" }} · {{ concordance.methods | join(" vs ") }}</td></tr>
+      {% else %}
+      <tr><td>Deconvolution method agreement</td><td class="muted">Not available (single method ran).</td></tr>
+      {% endif %}
+      {% if atlas %}
+      <tr><td>External atlas check</td><td>
+        {{ atlas.name }}:
+        {% if atlas.status == "ok" %}
+          zone–structure correlation {{ atlas.diagonal_mean }} (diagonal mean), top-1 match {{ atlas.top1_accuracy }} across {{ atlas.n_zones_compared }} zones, {{ atlas.n_genes }} genes{% if atlas.excluded_genes %}; zone-marker genes excluded to avoid circularity: {{ atlas.excluded_genes | join(", ") }}{% endif %}.
+          <br /><span class="muted">{{ atlas.note }}</span>
+        {% else %}
+          <span class="muted">{{ atlas.reason }}</span>
+        {% endif %}
+        <br /><span class="muted">{{ atlas.citation }}</span>
+      </td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+  {% if metrics %}
+  <h2><span class="num">08</span> Benchmark (synthetic ground truth)</h2>
+  <div class="two">
+    <table>
+      <tbody>
+        <tr><td>Composition JSD</td><td>{{ metrics.composition.jsd_mean }}</td></tr>
+        <tr><td>Composition RMSE</td><td>{{ metrics.composition.rmse }}</td></tr>
+        <tr><td>Dominant-type Pearson</td><td>{{ metrics.composition.dominant_type_pearson }}</td></tr>
+      </tbody>
+    </table>
+    <table>
+      <tbody>
+        <tr><td>Domain ARI</td><td>{{ metrics.domains.ari }}</td></tr>
+        <tr><td>Domain NMI</td><td>{{ metrics.domains.nmi }}</td></tr>
+        <tr><td>Spots</td><td>{{ metrics.n_spots }}</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted" style="font-size:10px;">{{ metrics.note }}</p>
+  {% endif %}
+
+  {% if warnings %}
+  <h2><span class="num">09</span> Warnings & limitations</h2>
+  <div class="warn">
+    <b>Read before interpreting.</b>
+    <ul>
+      {% for w in warnings %}<li>{{ w }}</li>{% endfor %}
+      <li>Cell-type deconvolution is an inference from bulk spot expression; it is not single-cell ground truth.</li>
+      <li>Spatial domains are computational regions, not pathological diagnoses.</li>
+      <li>Results require independent validation before any research or clinical decision.</li>
+    </ul>
+  </div>
+  {% endif %}
+
+  <h2><span class="num">10</span> Methods & versions</h2>
+  <table>
+    <tbody>
+      <tr><td>Method</td><td>{{ summary.method }}</td></tr>
+      <tr><td>Pipeline</td><td>{{ summary.pipeline_version }}</td></tr>
+      <tr><td>Disease pack</td><td>{{ pack.id }} v{{ pack.version }} ({{ pack.status }})</td></tr>
+      <tr><td>Sample</td><td>{{ summary.sample_id }}</td></tr>
+      <tr><td>Data</td><td>{% if summary.synthetic %}Synthetic demo data{% else %}User-provided spatial transcriptomics{% endif %}</td></tr>
+      {% if provenance %}
+      <tr><td>Pack fingerprint</td><td class="mono">sha256:{{ provenance.disease_pack.sha256 }}</td></tr>
+      <tr><td>Reference data</td><td>{{ provenance.reference.version }}</td></tr>
+      <tr><td>Software commit</td><td class="mono">{{ provenance.software.commit }}</td></tr>
+      <tr><td>Analysis package</td><td>topiome-analysis {{ provenance.software.analysis_package }} · Python {{ provenance.software.python }} · NumPy {{ provenance.software.numpy }} · SciPy {{ provenance.software.scipy }} · scikit-learn {{ provenance.software.scikit_learn }}</td></tr>
+      <tr><td>Parameters</td><td class="mono">{{ provenance.params | tojson }}</td></tr>
+      {% for file in provenance.input.files %}
+      <tr><td>{% if loop.first %}Input files{% endif %}</td><td class="mono">{{ file.filename }} · sha256:{{ file.sha256[:16] }}…</td></tr>
+      {% endfor %}
+      {% if provenance.input.synthetic_seed is not none %}
+      <tr><td>Synthetic seed</td><td>{{ provenance.input.synthetic_seed }}</td></tr>
+      {% endif %}
+      {% endif %}
+    </tbody>
+  </table>
+
+  <div class="footer">
+    <b>For Research Use Only.</b> Topiome is not intended for diagnosis, prognosis, treatment selection,
+    or clinical decision-making. Results are computational inferences from research data and must be
+    independently validated. © {{ year }} Topiome. All rights reserved.
+  </div>
+</div>
+</body>
+</html>

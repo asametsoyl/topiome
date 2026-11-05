@@ -1,0 +1,43 @@
+[project]
+name = "topiome-analysis"
+version = "0.1.0"
+description = "Topiome spatial transcriptomics analysis engine (baseline)"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "numpy>=2.1",
+  "pandas>=2.2",
+  "scipy>=1.14",
+  "scikit-learn>=1.5",
+  "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+full = [
+  "anndata>=0.11",
+  "scanpy>=1.10",
+  "squidpy>=1.5",
+  "torch>=2.4",
+  "torch-geometric>=2.6",
+  "tangram-sc>=1.0",
+  "cell2location>=0.1.4",
+]
+dev = [
+  "pytest>=8.3",
+  "ruff>=0.8",
+]
+
+[tool.uv]
+package = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+# macOS AppleDouble files on the exFAT disk
+extend-exclude = ["**/._*"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

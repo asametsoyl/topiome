@@ -1,0 +1,131 @@
+id: lung
+version: 0.2.0
+status: draft
+name: Lung Cancer
+short_name: Lung
+tissue: lung
+data_richness: high
+color: "#8DB6D9"
+description: >
+  Lung cancer spatial atlas. Covers tumor, alveolar and airway compartments,
+  stroma, immune infiltrate and necrosis.
+aliases: [NSCLC, LUAD, LUSC, lung adenocarcinoma, lung squamous]
+reference:
+  scrna_sources:
+    - Human Lung Cell Atlas
+    - Tabula Sapiens (lung)
+    - TCGA-LUAD/LUSC derived signatures
+  spatial_sources:
+    - 10x Genomics Visium human lung cancer
+    - HTAN lung atlas
+  minimum_samples: 3
+cell_types:
+  - id: alveolar
+    name: Alveolar epithelial
+    markers: [SFTPC, SFTPB, AGER, SLC34A2]
+    color: "#9AD0C2"
+  - id: airway
+    name: Airway epithelial
+    markers: [KRT5, KRT17, SCGB1A1, MUC5B]
+    color: "#B7D9A8"
+  - id: tumor
+    name: Tumor epithelium
+    markers: [EPCAM, NKX2-1, KRT7, CEACAM5]
+    color: "#4E9F5A"
+  - id: fibroblast
+    name: Fibroblast / CAF
+    markers: [COL1A1, COL1A2, DCN, PDGFRB]
+    color: "#C8B08A"
+  - id: endothelial
+    name: Endothelial
+    markers: [PECAM1, VWF, CDH5]
+    color: "#D96C5F"
+  - id: t_cell
+    name: T cell
+    markers: [CD3D, CD3E, CD2, CD8A, TRAC]
+    color: "#6FA8DC"
+  - id: b_cell
+    name: B cell
+    markers: [CD79A, MS4A1, CD19, IGHM]
+    color: "#8E7CC3"
+  - id: macrophage
+    name: Macrophage
+    markers: [CD68, CD163, CSF1R, C1QA]
+    color: "#E6A96B"
+zones:
+  - id: tumor
+    name: Tumor
+    markers: [EPCAM, NKX2-1, KRT7]
+    color: "#FF6B6B"
+    description: Malignant epithelial compartment.
+  - id: stroma
+    name: Stroma
+    markers: [COL1A1, DCN, PDGFRB]
+    color: "#C8B08A"
+    description: Fibrous stroma.
+  - id: immune
+    name: Immune infiltrate
+    markers: [CD3D, CD68, CD79A]
+    color: "#6FA8DC"
+    description: Immune-rich region.
+  - id: necrosis
+    name: Necrosis / hypoxia
+    markers: [VEGFA, CA9, SLC2A1]
+    color: "#5C5C5C"
+    description: Hypoxic / necrotic region.
+  - id: alveolar
+    name: Alveolar region
+    markers: [SFTPC, AGER, SLC34A2]
+    color: "#9AD0C2"
+    description: Preserved alveolar architecture.
+  - id: airway
+    name: Airway
+    markers: [KRT5, SCGB1A1, MUC5B]
+    color: "#B7D9A8"
+    description: Airway epithelium.
+targets:
+  - gene: EGFR
+    name: EGFR
+    rationale: Established lung adenocarcinoma target.
+    evidence_level: established
+  - gene: ALK
+    name: ALK
+    rationale: Fusion-driven target.
+    evidence_level: established
+  - gene: KRAS
+    name: KRAS
+    rationale: MAPK pathway; resistance context.
+    evidence_level: established
+  - gene: CD274
+    name: PD-L1
+    rationale: Immune checkpoint context.
+    evidence_level: established
+  - gene: VEGFA
+    name: VEGF-A
+    rationale: Angiogenesis target.
+    evidence_level: emerging
+  - gene: MET
+    name: MET
+    rationale: Exon 14 skipping / amplification subset.
+    evidence_level: emerging
+ligand_receptor_pairs:
+  - { ligand: CD274, receptor: PDCD1, sender: tumor, receiver: t_cell, category: "immune checkpoint" }
+  - { ligand: VEGFA, receptor: KDR, sender: tumor, receiver: endothelial, category: "angiogenesis" }
+  - { ligand: SPP1, receptor: CD44, sender: macrophage, receiver: tumor, category: "myeloid–tumor" }
+  - { ligand: CXCL12, receptor: CXCR4, sender: fibroblast, receiver: tumor, category: "chemokine" }
+  - { ligand: TGFB1, receptor: TGFBR2, sender: tumor, receiver: fibroblast, category: "stromal activation" }
+  - { ligand: CSF1, receptor: CSF1R, sender: tumor, receiver: macrophage, category: "myeloid recruitment" }
+  - { ligand: AREG, receptor: EGFR, sender: tumor, receiver: tumor, category: "growth factor" }
+  - { ligand: CXCL13, receptor: CXCR5, sender: t_cell, receiver: b_cell, category: "lymphoid aggregate" }
+not_assessed:
+  - "EGFR/ALK/ROS1/KRAS and other driver alterations"
+  - "PD-L1 tumor proportion score (requires validated IHC)"
+  - "Histological subtype diagnosis"
+  - "Patient prognosis or treatment response"
+report:
+  title: Lung Cancer Spatial Atlas
+  sections: [summary, qc, composition, domains, targets, limitations]
+validation:
+  metrics: {}
+  last_run: null
+  approved_by: null

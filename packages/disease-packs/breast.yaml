@@ -1,0 +1,138 @@
+id: breast
+version: 0.2.0
+status: beta
+name: Breast Cancer
+short_name: Breast
+tissue: breast
+data_richness: high
+color: "#E8B4B8"
+description: >
+  Breast cancer spatial atlas. Covers tumor epithelial compartments, invasive
+  margin, stromal and immune aggregates, and normal glandular structures.
+aliases: [BRCA, mammary carcinoma]
+reference:
+  scrna_sources:
+    - Tabula Sapiens (breast)
+    - Human Cell Atlas breast
+    - TCGA-BRCA derived signatures
+  spatial_sources:
+    - 10x Genomics Visium human breast cancer
+    - HTAN breast atlas
+  minimum_samples: 3
+cell_types:
+  - id: epithelial
+    name: Epithelial
+    markers: [EPCAM, KRT8, KRT18, KRT19, CDH1]
+    color: "#E8B4B8"
+  - id: luminal
+    name: Luminal epithelial
+    markers: [ESR1, GATA3, KRT7, FOXA1, AR]
+    color: "#F2C6C2"
+  - id: basal
+    name: Basal / myoepithelial
+    markers: [KRT5, KRT14, TP63, ACTA2]
+    color: "#D98C8C"
+  - id: her2
+    name: HER2-amplified tumor
+    markers: [ERBB2, GRB7, MIEN1]
+    color: "#C95B7A"
+  - id: fibroblast
+    name: Fibroblast / CAF
+    markers: [COL1A1, COL1A2, DCN, PDGFRB, LUM]
+    color: "#C8B08A"
+  - id: endothelial
+    name: Endothelial
+    markers: [PECAM1, VWF, CDH5, CLDN5]
+    color: "#D96C5F"
+  - id: t_cell
+    name: T cell
+    markers: [CD3D, CD3E, CD2, CD8A, TRAC]
+    color: "#6FA8DC"
+  - id: b_cell
+    name: B cell
+    markers: [CD79A, MS4A1, CD19, IGHM]
+    color: "#8E7CC3"
+  - id: macrophage
+    name: Macrophage
+    markers: [CD68, CD163, CSF1R, C1QA]
+    color: "#E6A96B"
+  - id: adipose
+    name: Adipocyte
+    markers: [ADIPOQ, PLIN1, FABP4]
+    color: "#F5D98B"
+zones:
+  - id: tumor_core
+    name: Tumor core
+    markers: [EPCAM, KRT8, ERBB2]
+    color: "#FF6B6B"
+    description: Dense tumor epithelium.
+  - id: invasive_margin
+    name: Invasive margin
+    markers: [EPCAM, COL1A1, CD3D]
+    color: "#FF9F43"
+    description: Tumor-stroma interface with immune infiltration.
+  - id: stroma
+    name: Stroma
+    markers: [COL1A1, DCN, PDGFRB]
+    color: "#C8B08A"
+    description: Fibrous and vascular stroma.
+  - id: immune_aggregate
+    name: Immune aggregate
+    markers: [CD3D, CD79A, CD68]
+    color: "#6FA8DC"
+    description: Lymphoid aggregate / tertiary lymphoid structure candidate.
+  - id: normal_gland
+    name: Normal gland
+    markers: [EPCAM, KRT7, GATA3]
+    color: "#9AD0C2"
+    description: Benign glandular epithelium.
+  - id: necrosis
+    name: Necrosis / hypoxia
+    markers: [VEGFA, CA9, SLC2A1]
+    color: "#5C5C5C"
+    description: Hypoxic / necrotic region.
+targets:
+  - gene: ERBB2
+    name: HER2
+    rationale: Established breast cancer target; spatial expression informs heterogeneity.
+    evidence_level: established
+  - gene: ESR1
+    name: Estrogen receptor
+    rationale: Endocrine therapy target; luminal lineage marker.
+    evidence_level: established
+  - gene: PGR
+    name: Progesterone receptor
+    rationale: Endocrine response biomarker.
+    evidence_level: established
+  - gene: EGFR
+    name: EGFR
+    rationale: Exploratory target in triple-negative disease.
+    evidence_level: emerging
+  - gene: CD274
+    name: PD-L1
+    rationale: Immune checkpoint context; spatial immune exclusion.
+    evidence_level: emerging
+  - gene: VEGFA
+    name: VEGF-A
+    rationale: Angiogenesis and hypoxia context.
+    evidence_level: emerging
+ligand_receptor_pairs:
+  - { ligand: CD274, receptor: PDCD1, sender: macrophage, receiver: t_cell, category: "immune checkpoint" }
+  - { ligand: CXCL12, receptor: CXCR4, sender: fibroblast, receiver: epithelial, category: "chemokine" }
+  - { ligand: VEGFA, receptor: KDR, sender: epithelial, receiver: endothelial, category: "angiogenesis" }
+  - { ligand: SPP1, receptor: CD44, sender: macrophage, receiver: epithelial, category: "myeloid–tumor" }
+  - { ligand: TGFB1, receptor: TGFBR2, sender: epithelial, receiver: fibroblast, category: "stromal activation" }
+  - { ligand: CSF1, receptor: CSF1R, sender: epithelial, receiver: macrophage, category: "myeloid recruitment" }
+  - { ligand: NRG1, receptor: ERBB3, sender: fibroblast, receiver: her2, category: "growth factor" }
+  - { ligand: CXCL13, receptor: CXCR5, sender: t_cell, receiver: b_cell, category: "lymphoid aggregate" }
+not_assessed:
+  - "ER/PR/HER2 clinical status (requires validated IHC/ISH)"
+  - "Histological grade or stage"
+  - "Patient prognosis, recurrence risk, or treatment response"
+report:
+  title: Breast Cancer Spatial Atlas
+  sections: [summary, qc, composition, domains, targets, limitations]
+validation:
+  metrics: {}
+  last_run: null
+  approved_by: null

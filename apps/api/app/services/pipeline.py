@@ -1,0 +1,247 @@
+from __future__ import annotations
+
+import json
+import traceback
+import zipfile
+from datetime import UTC, datetime
+from pathlib import Path
+
+from analysis import generate_demo_dataset, load_visium, run_pipeline
+from sqlalchemy import select, update
+
+from ..db import SessionLocal
+from ..disease_packs import get_pack
+from ..models import Report, Result, Run, Sample
+from .provenance import build_provenance
+from .report import build_report
+from .storage import storage
+
+
+class RunCancelled(Exception):
+    """Raised when a run was cancelled while the worker was processing it."""
+
+
+def sample_raw_dir(sample: Sample) -> str:
+    return f"orgs/{sample.org_id}/projects/{sample.project_id}/samples/{sample.id}/raw"
+
+
+def _find_visium_root(base: Path) -> Path | None:
+    candidates = [base]
+    candidates.extend([p for p in base.rglob("*") if p.is_dir()])
+    for candidate in candidates:
+        matrix = list(candidate.glob("matrix.mtx*"))
+        if matrix:
+            return candidate
+    return None
+
+
+def _extract_zip(zip_path: Path, destination: Path) -> None:
+    destination.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(zip_path) as archive:
+        for member in archive.infolist():
+            target = (destination / member.filename).resolve()
+            if destination.resolve() not in target.parents and target != destination.resolve():
+                raise ValueError("Unsafe zip entry")
+            archive.extract(member, destination)
+
+
+def prepare_visium_dir(sample: Sample) -> Path | None:
+    if not sample.files:
+        return None
+    raw_key = sample_raw_dir(sample)
+    base = storage.path(raw_key)
+    if not base.exists():
+        return None
+    zips = list(base.glob("*.zip"))
+    if zips:
+        extract_root = storage.path(f"{raw_key}/extracted/{zips[0].stem}")
+        if not extract_root.exists():
+            _extract_zip(zips[0], extract_root)
+        return _find_visium_root(extract_root)
+    return _find_visium_root(base)
+
+
+def _update(db, run: Run, *, status=None, stage=None, progress=None, **kwargs) -> None:
+    if status is not None:
+        run.status = status
+    if stage is not None:
+        run.stage = stage
+    if progress is not None:
+        run.progress = float(progress)
+    for key, value in kwargs.items():
+        setattr(run, key, value)
+    db.commit()
+
+
+def _check_cancelled(db, run: Run) -> None:
+    db.refresh(run, attribute_names=["status"])
+    if run.status == "cancelled":
+        raise RunCancelled(run.id)
+
+
+def _transition(db, run_id: str, *, expected: str, **values) -> bool:
+    """Atomically move a run out of ``expected`` status; False if it was changed meanwhile."""
+    result = db.execute(
+        update(Run)
+        .where(Run.id == run_id, Run.status == expected)
+        .values(**values)
+        .execution_options(synchronize_session=False)
+    )
+    return result.rowcount == 1
+
+
+def execute_run(run_id: str) -> None:
+    """Execute a run in its own DB session. Safe for BackgroundTasks/RQ."""
+    db = SessionLocal()
+    run = db.get(Run, run_id)
+    if run is None:
+        db.close()
+        return
+    sample = db.get(Sample, run.sample_id)
+    if sample is None:
+        run.status = "failed"
+        run.error_code = "sample_missing"
+        run.error_message = "Sample not found"
+        db.commit()
+        db.close()
+        return
+
+    try:
+        started = _transition(
+            db,
+            run.id,
+            expected="queued",
+            status="running",
+            stage="loading",
+            progress=0.05,
+            started_at=datetime.now(UTC),
+            error_code=None,
+            error_message=None,
+        )
+        db.commit()
+        if not started:
+            raise RunCancelled(run.id)
+        db.refresh(run)
+        pack = get_pack(run.disease_pack)
+        run.pack_version = pack["version"]
+        db.commit()
+
+        params = run.params or {}
+        signatures = None
+        visium_dir = prepare_visium_dir(sample)
+
+        synthetic_seed: int | None = None
+        if visium_dir is not None:
+            dataset = load_visium(visium_dir, sample_id=sample.id)
+            dataset.metadata.update(sample.sample_metadata or {})
+        else:
+            synthetic_seed = int(params.get("seed", 42))
+            dataset, signatures, ground_truth = generate_demo_dataset(
+                pack,
+                n_spots=int(params.get("n_spots", 1200)),
+                seed=synthetic_seed,
+            )
+            dataset.sample_id = sample.id
+            dataset.ground_truth = ground_truth
+            dataset.metadata.update(sample.sample_metadata or {})
+            dataset.metadata["synthetic"] = True
+
+        run.provenance = build_provenance(
+            pipeline_version=run.pipeline_version,
+            pack=pack,
+            params=params,
+            input_kind="visium" if visium_dir is not None else "synthetic",
+            input_files=[
+                {"filename": f.filename, "sha256": f.sha256, "size_bytes": f.size_bytes}
+                for f in sorted(sample.files, key=lambda f: f.filename)
+            ],
+            synthetic_seed=synthetic_seed,
+        )
+        sample.spot_count = int(dataset.expression.shape[0])
+        sample.status = "validated"
+        db.commit()
+
+        _check_cancelled(db, run)
+        _update(db, run, stage="deconvolution", progress=0.25)
+        result = run_pipeline(
+            dataset,
+            pack,
+            signatures=signatures,
+            params=params,
+        )
+        _check_cancelled(db, run)
+
+        _update(db, run, stage="report", progress=0.85)
+        if result.pipeline_version != run.pipeline_version:
+            run.pipeline_version = result.pipeline_version
+            run.provenance = {**(run.provenance or {}), "pipeline_version": result.pipeline_version}
+        payload = result.to_payload()
+        payload["provenance"] = run.provenance
+        result_key = f"runs/{run.id}/results.json"
+        storage.save_bytes(result_key, json.dumps(payload, ensure_ascii=False).encode("utf-8"))
+
+        existing = db.scalar(select(Result).where(Result.run_id == run.id))
+        if existing:
+            existing.payload = payload
+            existing.storage_key = result_key
+        else:
+            db.add(Result(run_id=run.id, payload=payload, storage_key=result_key))
+
+        report_html = build_report(run, payload, pack)
+        _check_cancelled(db, run)
+        report_key = f"runs/{run.id}/report.html"
+        storage.save_bytes(report_key, report_html.encode("utf-8"))
+        existing_report = db.scalar(select(Report).where(Report.run_id == run.id))
+        if existing_report:
+            existing_report.html = report_html
+            existing_report.status = "draft"
+            existing_report.approved_by = None
+            existing_report.approved_at = None
+            existing_report.approval_note = ""
+        else:
+            db.add(Report(run_id=run.id, html=report_html, status="draft"))
+
+        run.summary = payload["summary"]
+        db.flush()
+        # Only succeed if nobody cancelled the run meanwhile; otherwise drop the outputs.
+        if not _transition(
+            db,
+            run.id,
+            expected="running",
+            status="succeeded",
+            stage="done",
+            progress=1.0,
+            finished_at=datetime.now(UTC),
+        ):
+            raise RunCancelled(run.id)
+        db.commit()
+    except RunCancelled:
+        db.rollback()
+        run = db.get(Run, run_id)
+        if run is not None and run.status == "cancelled":
+            run.stage = "cancelled"
+            run.finished_at = run.finished_at or datetime.now(UTC)
+            db.commit()
+    except Exception as exc:  # noqa: BLE001
+        db.rollback()
+        run = db.get(Run, run_id)
+        if run is not None and run.status != "cancelled":
+            run.status = "failed"
+            run.stage = "failed"
+            run.error_code = (
+                "invalid_input"
+                if isinstance(exc, (ValueError, FileNotFoundError, zipfile.BadZipFile))
+                else "pipeline_error"
+            )
+            run.error_message = str(exc)[:1000]
+            run.finished_at = datetime.now(UTC)
+            db.commit()
+            try:
+                storage.save_bytes(
+                    f"runs/{run.id}/error.log",
+                    traceback.format_exc().encode("utf-8"),
+                )
+            except Exception:
+                pass
+    finally:
+        db.close()

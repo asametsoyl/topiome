@@ -1,0 +1,128 @@
+id: prostate
+version: 0.2.0
+status: draft
+name: Prostate Cancer
+short_name: Prostate
+tissue: prostate
+data_richness: medium
+color: "#6FA8DC"
+description: >
+  Prostate cancer spatial atlas. Covers tumor glands, benign glands, stroma,
+  immune infiltrate and perineural invasion.
+aliases: [PRAD, prostate adenocarcinoma]
+reference:
+  scrna_sources:
+    - Tabula Sapiens (prostate)
+    - Human Cell Atlas prostate
+    - TCGA-PRAD derived signatures
+  spatial_sources:
+    - Visium prostate cancer studies
+    - HTAN prostate atlas
+  minimum_samples: 3
+cell_types:
+  - id: luminal
+    name: Luminal epithelial
+    markers: [KRT8, KRT18, KLK3, AR, NKX3-1]
+    color: "#9AD0C2"
+  - id: basal
+    name: Basal epithelial
+    markers: [KRT5, KRT14, TP63]
+    color: "#B7D9A8"
+  - id: tumor
+    name: Tumor epithelium
+    markers: [EPCAM, KLK3, AR, NKX3-1]
+    color: "#4E9F5A"
+  - id: fibroblast
+    name: Fibroblast / CAF
+    markers: [COL1A1, COL1A2, DCN, PDGFRB]
+    color: "#C8B08A"
+  - id: smooth_muscle
+    name: Smooth muscle
+    markers: [ACTA2, MYH11, DES]
+    color: "#B58B7A"
+  - id: endothelial
+    name: Endothelial
+    markers: [PECAM1, VWF, CDH5]
+    color: "#D96C5F"
+  - id: t_cell
+    name: T cell
+    markers: [CD3D, CD3E, CD2, CD8A, TRAC]
+    color: "#6FA8DC"
+  - id: b_cell
+    name: B cell
+    markers: [CD79A, MS4A1, CD19, IGHM]
+    color: "#8E7CC3"
+  - id: macrophage
+    name: Macrophage
+    markers: [CD68, CD163, CSF1R, C1QA]
+    color: "#E6A96B"
+zones:
+  - id: tumor
+    name: Tumor
+    markers: [EPCAM, KLK3, AR]
+    color: "#FF6B6B"
+    description: Malignant glandular compartment.
+  - id: benign_gland
+    name: Benign gland
+    markers: [KRT8, NKX3-1, KRT5]
+    color: "#9AD0C2"
+    description: Benign glandular epithelium.
+  - id: stroma
+    name: Stroma
+    markers: [COL1A1, DCN, ACTA2]
+    color: "#C8B08A"
+    description: Fibromuscular stroma.
+  - id: immune
+    name: Immune infiltrate
+    markers: [CD3D, CD68, CD79A]
+    color: "#6FA8DC"
+    description: Immune-rich region.
+  - id: perineural
+    name: Perineural
+    markers: [S100B, PLP1, COL1A1]
+    color: "#B7A6D9"
+    description: Perineural invasion candidate.
+targets:
+  - gene: AR
+    name: Androgen receptor
+    rationale: Established prostate cancer target.
+    evidence_level: established
+  - gene: KLK3
+    name: PSA
+    rationale: Prostate lineage / response biomarker.
+    evidence_level: established
+  - gene: FOLH1
+    name: PSMA
+    rationale: Theranostic target.
+    evidence_level: established
+  - gene: EZH2
+    name: EZH2
+    rationale: Epigenetic target in advanced disease.
+    evidence_level: emerging
+  - gene: CD274
+    name: PD-L1
+    rationale: Immune checkpoint context.
+    evidence_level: emerging
+  - gene: VEGFA
+    name: VEGF-A
+    rationale: Angiogenesis target.
+    evidence_level: emerging
+ligand_receptor_pairs:
+  - { ligand: CD274, receptor: PDCD1, sender: macrophage, receiver: t_cell, category: "immune checkpoint" }
+  - { ligand: VEGFA, receptor: KDR, sender: tumor, receiver: endothelial, category: "angiogenesis" }
+  - { ligand: SPP1, receptor: CD44, sender: macrophage, receiver: tumor, category: "myeloid–tumor" }
+  - { ligand: CXCL12, receptor: CXCR4, sender: fibroblast, receiver: tumor, category: "chemokine" }
+  - { ligand: TGFB1, receptor: TGFBR2, sender: tumor, receiver: fibroblast, category: "stromal activation" }
+  - { ligand: CSF1, receptor: CSF1R, sender: tumor, receiver: macrophage, category: "myeloid recruitment" }
+  - { ligand: CXCL13, receptor: CXCR5, sender: t_cell, receiver: b_cell, category: "lymphoid aggregate" }
+not_assessed:
+  - "Gleason score / ISUP grade group"
+  - "AR-V7, PTEN, or other genomic alterations"
+  - "Patient prognosis or treatment response"
+report:
+  title: Prostate Cancer Spatial Atlas
+  sections: [summary, qc, composition, domains, targets, limitations]
+validation:
+  metrics: {}
+  last_run: null
+  approved_by: null
