@@ -19,7 +19,7 @@ Meme · Kolorektal · Akciğer · Melanom · Prostat · Glioblastoma
 
 ## Teknoloji
 
-Next.js 16 · React 19 · TypeScript · Tailwind 4 · FastAPI · SQLAlchemy 2 · Python 3.12 · PostgreSQL · Redis/RQ (prod) · S3
+Next.js 16 · React 19 · TypeScript · Tailwind 4 · FastAPI · SQLAlchemy 2 · Python 3.12 · PostgreSQL · DB tabanlı worker kuyruğu · Docker Compose · S3 (planlı)
 
 ## Kurulum
 
@@ -32,6 +32,9 @@ npm run dev
 - Web: http://localhost:3000
 - API: http://localhost:8000/docs
 - Demo: `demo@topiome.com` / `demo1234`
+- Gerçek veri: 10x Space Ranger `.h5` veya `matrix.mtx` + `barcodes` + `features` + `tissue_positions` (zip/tar da olur)
+
+Üretim: `docs/DEPLOY.md` (Docker Compose: Postgres + API + worker + web).
 
 ## Dokümantasyon
 

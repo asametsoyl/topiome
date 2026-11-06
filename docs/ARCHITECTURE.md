@@ -23,7 +23,7 @@
         ▼                       ▼                       ▼
 ┌───────────────┐      ┌────────────────┐      ┌─────────────────────┐
 │ PostgreSQL    │      │ S3 / local FS  │      │ Queue               │
-│ (metadata)    │      │ (raw/derived)  │      │ inline dev / RQ prod│
+│ (metadata)    │      │ (raw/derived)  │      │ inline dev / DB worker prod│
 └───────────────┘      └────────────────┘      └──────────┬──────────┘
                                                             │
                                                 ┌───────────▼──────────┐
@@ -87,8 +87,9 @@ Organization ──< AuditLog
 
 ## 6. Dosya yükleme
 
-- Desteklenen (Faz 1): 10x Visium klasörü (matrix.mtx.gz, barcodes.tsv.gz, features.tsv.gz, tissue_positions.csv), opsiyonel H&E görüntüsü, opsiyonel scRNA-seq `.h5ad`.
-- Alternatif: zip.
+- Desteklenen (Faz 1): Space Ranger `filtered_feature_bc_matrix.h5`; veya `matrix.mtx(.gz)` + `barcodes.tsv(.gz)` + `features.tsv(.gz)`/`genes.tsv(.gz)` + `tissue_positions.csv` / `tissue_positions_list.csv`; opsiyonel `scalefactors_json.json` ve doku görüntüsü.
+- Alternatif: `.zip`, `.tar`, `.tar.gz`, `.tgz` (path traversal korumalı çıkarma); `.h5` doğrudan yükleme.
+- QC tam matris üzerinde hesaplanır; gen ön seçimi kütüphane boyutunu değiştirmez.
 - Doğrulama: boyut, MIME, zorunlu dosyalar, barcode tutarlılığı, spot sayısı.
 - Depolama yolu: `orgs/{org_id}/projects/{project_id}/samples/{sample_id}/raw/...`
 - Metadata: `sample.json` (tür, doku, hastalık, platform, hazırlık, batch).
@@ -97,7 +98,7 @@ Organization ──< AuditLog
 ## 7. Job akışı
 
 1. `POST /runs` → Run kaydı `queued`.
-2. Dev: FastAPI `BackgroundTasks` ile inline; Prod: RQ `enqueue`.
+2. Dev: FastAPI `BackgroundTasks` ile inline; Prod: run `queued` kalır, `python -m app.worker` atomik olarak sahiplenir (Postgres tabanlı kuyruk; Redis/RQ henüz yok).
 3. Worker: dosyaları indirir → pipeline → sonuçları yazar → Run `succeeded/failed`.
 4. UI polling (`/runs/{id}`) veya SSE (sonra).
 5. Hata: `error_code`, `error_message`, `trace_id`; kullanıcıya anlaşılır mesaj.
@@ -114,7 +115,9 @@ load → validate → QC → normalize → deconvolve (NNLS) → spatial smooth
 - **Normalize:** CPM/median-of-ratios; log1p.
 - **Deconvolve:** referans hücre tipi imzalarına karşı NNLS; her spot için ağırlıklar.
 - **Spatial smooth:** kNN grafiği üzerinde ağırlıklı ortalama; sınır koruma.
-- **Domains:** ölçeklenmiş özellikler + koordinatlar üzerinde KMeans/Leiden; klinik olmayan "domain" etiketi.
+- **Domains:** ölçeklenmiş özellikler + koordinatlar üzerinde KMeans/Leiden (sentetik) veya paketle gelen GraphSAGE domain modeli (gerçek örnek, uygun gen kapsamı); klinik olmayan "domain" etiketi.
+- **Gerçek örnek referansı:** paket `reference.signatures` tanımlıysa NNLS bu sürümlü scRNA imzalarına karşı çalışır; sentetik demo marker pseudosignature kullanır.
+- **Atlas kontrolü:** paket `atlas_reference` tanımlıysa (şu an GBM/Ivy GAP) zon ortalamaları dış atlasla z-skor korelasyonuna sokulur; marker genleri hariç tutulur.
 - **Neighborhood:** hücre tipi komşuluk zenginleşmesi; ligand-receptor için hazırlık.
 - **Target score:** disease pack'teki hedef genlerin hücre tipi/bölge ifadesi; skor + belirsizlik.
 - **Uncertainty:** bootstrap yeniden örnekleme veya posterior benzeri entropi; spot bazında 0–1.
@@ -136,7 +139,7 @@ Ağır modeller (Cell2location, Tangram, GraphST, STAGATE) aynı arayüze adapt�
 - `npm run dev` (web + api).
 
 ### Prod (ilk)
-- Tek VM: Docker Compose (web, api, worker, postgres, redis, minio, caddy).
+- Tek VM: Docker Compose (web, api, worker, postgres; TLS için önüne Caddy/Traefik). S3 uyumlu depolama ve Redis/RQ ileride.
 - Caddy: otomatik TLS, reverse proxy.
 - Yedek: günlük Postgres dump + S3 versiyonlama.
 - Gözlem: structured JSON log, Sentry (opsiyonel), uptime kontrolü.

@@ -61,6 +61,12 @@ def load_packs(*, force: bool = False) -> dict[str, dict[str, Any]]:
         except (OSError, ValueError) as exc:
             errors.append(f"{path.name}: atlas_reference: {exc}")
             continue
+        from .references import validate_pack_files
+
+        file_problems = validate_pack_files(pack)
+        if file_problems:
+            errors.extend(f"{path.name}: {problem}" for problem in file_problems)
+            continue
         pack_id = pack["id"]
         if pack_id in packs:
             errors.append(f"{path.name}: duplicate pack id '{pack_id}'")
@@ -131,6 +137,12 @@ def pack_summary(pack: dict[str, Any]) -> dict[str, Any]:
         "zone_count": len(pack.get("zones", [])),
         "target_count": len(pack.get("targets", [])),
         "ligand_receptor_count": len(pack.get("ligand_receptor_pairs", [])),
+        "has_reference_signatures": bool((pack.get("reference") or {}).get("signatures")),
+        "domain_model": (
+            {"version": pack["domain_model"].get("version"), "card": pack["domain_model"].get("card")}
+            if pack.get("domain_model")
+            else None
+        ),
         "not_assessed": pack.get("not_assessed", []),
         "atlas_reference": (
             {

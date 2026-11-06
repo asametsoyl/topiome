@@ -6,6 +6,7 @@ import { Suspense, useMemo, useState } from "react";
 import {
   ArrowUpRight,
   Filter,
+  GitCompareArrows,
   RefreshCw,
   Search,
   TriangleAlert,
@@ -44,6 +45,21 @@ function RunsContent() {
 
   const [tab, setTab] = useState<"all" | RunStatus>("all");
   const [query, setQuery] = useState("");
+  // Compare mode: the first pick becomes run A, the second run B.
+  const [comparing, setComparing] = useState(searchParams.get("compare") === "1");
+  const [picked, setPicked] = useState<string[]>([]);
+
+  function togglePick(runId: string) {
+    setPicked((current) => {
+      if (current.includes(runId)) return current.filter((id) => id !== runId);
+      return current.length >= 2 ? current : [...current, runId];
+    });
+  }
+
+  function toggleComparing() {
+    setComparing((value) => !value);
+    setPicked([]);
+  }
 
   const runs = useMemo(() => data ?? [], [data]);
   const filtered = useMemo(() => {
@@ -76,12 +92,68 @@ function RunsContent() {
         title="Runs"
         description="Every analysis is a versioned run: pipeline, disease pack, parameters, warnings, result, and report."
         actions={
-          <Button variant="secondary" onClick={reload} loading={loading}>
-            <RefreshCw className="size-4" />
-            Refresh
-          </Button>
+          <>
+            <Button
+              variant={comparing ? "outline" : "secondary"}
+              onClick={toggleComparing}
+              aria-pressed={comparing}
+            >
+              <GitCompareArrows className="size-4" />
+              {comparing ? "Stop comparing" : "Compare"}
+            </Button>
+            <Button variant="secondary" onClick={reload} loading={loading}>
+              <RefreshCw className="size-4" />
+              Refresh
+            </Button>
+          </>
         }
       />
+
+      {comparing ? (
+        <div className="flex flex-col gap-3 rounded-xl border border-acid/30 bg-acid/[0.04] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-2.5">
+            <GitCompareArrows className="mt-0.5 size-4 shrink-0 text-acid" />
+            <div>
+              <p className="text-xs font-medium text-bone">Pick two completed runs</p>
+              <p className="mt-0.5 text-[11px] leading-relaxed text-slate">
+                The first pick is shown as A (left), the second as B (right). Only completed runs
+                can be compared.
+              </p>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            {(["A", "B"] as const).map((label, index) => (
+              <span
+                key={label}
+                className={cn(
+                  "inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 font-mono text-[10px]",
+                  picked[index]
+                    ? label === "A"
+                      ? "border-teal/40 text-teal"
+                      : "border-acid/40 text-acid"
+                    : "border-line text-slate",
+                )}
+              >
+                {label}
+                <span className="text-bone-dim">{picked[index]?.slice(0, 8) ?? "—"}</span>
+              </span>
+            ))}
+            {picked.length === 2 ? (
+              <Link
+                href={`/app/runs/compare?${new URLSearchParams({ a: picked[0], b: picked[1] })}`}
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-acid px-3 text-xs font-medium text-ink transition hover:bg-[#d6ff6a]"
+              >
+                Compare
+                <ArrowUpRight className="size-3.5" />
+              </Link>
+            ) : (
+              <Button size="sm" disabled>
+                Compare
+              </Button>
+            )}
+          </div>
+        </div>
+      ) : null}
 
       {projectId || sampleId ? (
         <div className="flex flex-wrap items-center gap-2">
@@ -181,46 +253,91 @@ function RunsContent() {
               <span className="text-right">Created</span>
             </div>
             <div className="divide-y divide-line-soft">
-              {filtered.map((run) => (
-                <Link
-                  key={run.id}
-                  href={`/app/runs/${run.id}`}
-                  className="group grid gap-3 px-4 py-3.5 transition hover:bg-bone/[0.03] sm:px-5 lg:grid-cols-[1.4fr_1fr_0.9fr_0.9fr_0.9fr_0.8fr] lg:items-center"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-ink-3 font-mono text-[9px] text-teal">
-                      {run.status === "succeeded" ? "OK" : run.status.slice(0, 2).toUpperCase()}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="font-mono text-[10px] text-bone-dim">{run.id.slice(0, 8)}</p>
-                      <p className="mt-0.5 truncate text-[10px] text-slate">
-                        {run.stage} · {run.pipeline_version}
-                      </p>
+              {filtered.map((run) => {
+                const slot = picked.indexOf(run.id);
+                const label = slot === 0 ? "A" : slot === 1 ? "B" : null;
+                const rowClass =
+                  "group grid gap-3 px-4 py-3.5 transition sm:px-5 lg:grid-cols-[1.4fr_1fr_0.9fr_0.9fr_0.9fr_0.8fr] lg:items-center";
+                const cells = (
+                  <>
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className={cn(
+                          "flex size-8 shrink-0 items-center justify-center rounded-lg border font-mono text-[9px]",
+                          label === "A"
+                            ? "border-teal/50 bg-teal/10 text-teal"
+                            : label === "B"
+                              ? "border-acid/50 bg-acid/10 text-acid"
+                              : "border-line bg-ink-3 text-teal",
+                        )}
+                      >
+                        {label ??
+                          (run.status === "succeeded" ? "OK" : run.status.slice(0, 2).toUpperCase())}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="font-mono text-[10px] text-bone-dim">{run.id.slice(0, 8)}</p>
+                        <p className="mt-0.5 truncate text-[10px] text-slate">
+                          {run.stage} · {run.pipeline_version}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-bone-dim">
-                      {titleCase(run.disease_pack)}
-                    </span>
-                    <Badge variant="outline">{run.pack_version}</Badge>
-                  </div>
-                  <div>
-                    <StatusBadge status={run.status} />
-                  </div>
-                  <p className="font-mono text-[11px] text-bone-dim">
-                    {run.summary?.n_spots ? formatNumber(run.summary.n_spots) : "—"}
-                  </p>
-                  <p className="font-mono text-[11px] text-bone-dim">
-                    {run.summary?.n_domains ?? "—"}
-                  </p>
-                  <div className="flex items-center justify-between gap-2 lg:justify-end">
-                    <span className="font-mono text-[10px] text-slate">
-                      {relativeTime(run.created_at)}
-                    </span>
-                    <ArrowUpRight className="size-3.5 text-slate transition group-hover:text-acid" />
-                  </div>
-                </Link>
-              ))}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-bone-dim">
+                        {titleCase(run.disease_pack)}
+                      </span>
+                      <Badge variant="outline">{run.pack_version}</Badge>
+                    </div>
+                    <div>
+                      <StatusBadge status={run.status} />
+                    </div>
+                    <p className="font-mono text-[11px] text-bone-dim">
+                      {run.summary?.n_spots ? formatNumber(run.summary.n_spots) : "—"}
+                    </p>
+                    <p className="font-mono text-[11px] text-bone-dim">
+                      {run.summary?.n_domains ?? "—"}
+                    </p>
+                    <div className="flex items-center justify-between gap-2 lg:justify-end">
+                      <span className="font-mono text-[10px] text-slate">
+                        {relativeTime(run.created_at)}
+                      </span>
+                      {comparing ? null : (
+                        <ArrowUpRight className="size-3.5 text-slate transition group-hover:text-acid" />
+                      )}
+                    </div>
+                  </>
+                );
+
+                if (!comparing) {
+                  return (
+                    <Link
+                      key={run.id}
+                      href={`/app/runs/${run.id}`}
+                      className={cn(rowClass, "hover:bg-bone/[0.03]")}
+                    >
+                      {cells}
+                    </Link>
+                  );
+                }
+                const blocked =
+                  run.status !== "succeeded" || (label === null && picked.length >= 2);
+                return (
+                  <button
+                    key={run.id}
+                    type="button"
+                    onClick={() => togglePick(run.id)}
+                    disabled={blocked}
+                    aria-pressed={label !== null}
+                    className={cn(
+                      rowClass,
+                      "w-full text-left focus-ring",
+                      label ? "bg-acid/[0.04]" : "hover:bg-bone/[0.03]",
+                      blocked && "cursor-not-allowed opacity-45 hover:bg-transparent",
+                    )}
+                  >
+                    {cells}
+                  </button>
+                );
+              })}
             </div>
           </div>
         ) : (

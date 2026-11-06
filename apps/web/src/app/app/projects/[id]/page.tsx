@@ -438,7 +438,7 @@ export default function ProjectDetailPage() {
 
           <Field
             label="Visium files"
-            hint="matrix.mtx(.gz), barcodes.tsv(.gz), features.tsv(.gz), tissue_positions.csv — or one zip. Leave empty for synthetic data."
+            hint="Space Ranger output: filtered_feature_bc_matrix.h5 (or matrix.mtx + barcodes + features) and spatial/tissue_positions.csv — or the outs/ folder as one .zip / .tar.gz. Leave empty for synthetic data."
           >
             <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-line bg-ink-3/60 px-4 py-6 text-center transition hover:border-acid/40 hover:bg-ink-3">
               <FileUp className="size-5 text-teal" />
@@ -456,7 +456,7 @@ export default function ProjectDetailPage() {
                 type="file"
                 multiple
                 className="sr-only"
-                accept=".mtx,.gz,.tsv,.csv,.json,.zip"
+                accept=".h5,.mtx,.gz,.tsv,.csv,.json,.png,.zip,.tar,.tgz"
                 onChange={(event) => setFiles(Array.from(event.target.files ?? []))}
               />
             </label>

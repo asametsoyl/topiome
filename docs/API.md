@@ -9,7 +9,7 @@ Auth: `topiome_session` httpOnly cookie (web) veya `Authorization: Bearer <api_k
 - Hata formatı: `{ "detail": "message", "code": "ERROR_CODE", "trace_id": "..." }`
 - Sayfalama: `?limit=50&offset=0`; yanıt `{ items, total, limit, offset }`.
 - Idempotency: `POST /runs` için `Idempotency-Key` opsiyonel.
-- Rate limit: `X-RateLimit-*` başlıkları.
+- Rate limit: giriş denemeleri IP + e-posta başına 15 dk / 10, IP başına 50 başarısız; `429` + `Retry-After`. Genel `X-RateLimit-*` başlıkları henüz yok.
 
 ## 2. Auth
 
@@ -62,6 +62,10 @@ Auth: `topiome_session` httpOnly cookie (web) veya `Authorization: Bearer <api_k
 | DELETE | `/samples/{id}` | soft delete |
 | GET | `/samples/{id}/files` | dosya listesi + signed URL |
 
+Yükleme biçimleri: `filtered_feature_bc_matrix.h5`; veya `matrix.mtx(.gz)` + `barcodes.tsv(.gz)` + `features.tsv(.gz)`/`genes.tsv(.gz)` + `tissue_positions.csv` / `tissue_positions_list.csv`; `.zip` / `.tar` / `.tar.gz` / `.tgz` arşivi. Opsiyonel `scalefactors_json.json` ve doku görüntüsü. Dosya göndermeden yalnız `metadata` ile sentetik demo örneği oluşturulabilir.
+
+`POST /auth/demo` üretimde `ALLOW_DEMO_LOGIN=false` ise 404 döner.
+
 ## 7. Çalıştırmalar
 
 | Method | Path | Açıklama |
@@ -72,6 +76,7 @@ Auth: `topiome_session` httpOnly cookie (web) veya `Authorization: Bearer <api_k
 | POST | `/runs/{id}/cancel` | iptal |
 | POST | `/runs/{id}/retry` | yeniden dene |
 | GET | `/runs/{id}/results` | özet sonuçlar |
+| GET | `/runs/compare?a=&b=` | iki başarılı run'ı yan yana (kayıtlı sonuçtan; yeniden analiz yok). Başka org → 404, bitmemiş run → 409, aynı run → 400; paket/sürüm farkında `warnings` |
 | GET | `/runs/{id}/artifacts` | dosya listesi |
 | GET | `/runs/{id}/report` | HTML rapor |
 | POST | `/runs/{id}/report/pdf` | PDF üret (Faz 2) |

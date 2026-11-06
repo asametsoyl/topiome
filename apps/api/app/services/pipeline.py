@@ -1,17 +1,20 @@
 from __future__ import annotations
 
 import json
+import tarfile
 import traceback
 import zipfile
 from datetime import UTC, datetime
 from pathlib import Path
 
 from analysis import generate_demo_dataset, load_visium, run_pipeline
+from analysis.io import discover_visium
 from sqlalchemy import select, update
 
 from ..db import SessionLocal
 from ..disease_packs import get_pack
 from ..models import Report, Result, Run, Sample
+from ..references import domain_model_for, reference_genes, signatures_for
 from .provenance import build_provenance
 from .report import build_report
 from .storage import storage
@@ -25,14 +28,22 @@ def sample_raw_dir(sample: Sample) -> str:
     return f"orgs/{sample.org_id}/projects/{sample.project_id}/samples/{sample.id}/raw"
 
 
-def _find_visium_root(base: Path) -> Path | None:
-    candidates = [base]
-    candidates.extend([p for p in base.rglob("*") if p.is_dir()])
-    for candidate in candidates:
-        matrix = list(candidate.glob("matrix.mtx*"))
-        if matrix:
-            return candidate
-    return None
+ARCHIVE_SUFFIXES = (".zip", ".tar.gz", ".tgz", ".tar")
+
+
+def _archive_stem(path: Path) -> str:
+    name = path.name
+    for suffix in ARCHIVE_SUFFIXES:
+        if name.lower().endswith(suffix):
+            return name[: -len(suffix)] or "archive"
+    return name
+
+
+def _extract_tar(tar_path: Path, destination: Path) -> None:
+    destination.mkdir(parents=True, exist_ok=True)
+    with tarfile.open(tar_path) as archive:
+        # "data" filter refuses absolute paths, ".." escapes, links outside and devices.
+        archive.extractall(destination, filter="data")
 
 
 def _extract_zip(zip_path: Path, destination: Path) -> None:
@@ -46,19 +57,47 @@ def _extract_zip(zip_path: Path, destination: Path) -> None:
 
 
 def prepare_visium_dir(sample: Sample) -> Path | None:
+    """Unpack uploaded archives and return the folder holding a complete Visium sample.
+
+    Returns None for demo samples without files; raises ValueError when files
+    were uploaded but do not form a complete sample.
+    """
     if not sample.files:
         return None
     raw_key = sample_raw_dir(sample)
     base = storage.path(raw_key)
     if not base.exists():
         return None
-    zips = list(base.glob("*.zip"))
-    if zips:
-        extract_root = storage.path(f"{raw_key}/extracted/{zips[0].stem}")
-        if not extract_root.exists():
-            _extract_zip(zips[0], extract_root)
-        return _find_visium_root(extract_root)
-    return _find_visium_root(base)
+    for archive in sorted(base.iterdir()):
+        if not archive.is_file() or archive.name.startswith("._"):
+            continue
+        if not archive.name.lower().endswith(ARCHIVE_SUFFIXES):
+            continue
+        target = storage.path(f"{raw_key}/extracted/{_archive_stem(archive)}")
+        if target.exists():
+            continue
+        if archive.name.lower().endswith(".zip"):
+            _extract_zip(archive, target)
+        else:
+            _extract_tar(archive, target)
+    missing = discover_visium(base).missing()
+    if missing:
+        raise ValueError("Uploaded files are not a complete Visium sample; missing " + ", ".join(missing))
+    return base
+
+
+def pack_genes(pack: dict) -> set[str]:
+    """Genes the analysis needs even if they are not among the most abundant."""
+    genes: set[str] = set()
+    for group in ("cell_types", "zones"):
+        for item in pack.get(group, []):
+            genes.update(item.get("markers", []))
+    genes.update(t.get("gene", "") for t in pack.get("targets", []))
+    for pair in pack.get("ligand_receptor_pairs", []):
+        genes.update([pair.get("ligand", ""), pair.get("receptor", "")])
+    atlas = (pack.get("atlas_reference") or {}).get("data") or {}
+    genes.update(atlas.get("genes", {}).keys())
+    return {g.upper() for g in genes if g}
 
 
 def _update(db, run: Run, *, status=None, stage=None, progress=None, **kwargs) -> None:
@@ -129,11 +168,19 @@ def execute_run(run_id: str) -> None:
         params = run.params or {}
         signatures = None
         visium_dir = prepare_visium_dir(sample)
+        shipped_reference = signatures_for(pack)
+        domain_model = domain_model_for(pack)
 
         synthetic_seed: int | None = None
         if visium_dir is not None:
-            dataset = load_visium(visium_dir, sample_id=sample.id)
+            dataset = load_visium(
+                visium_dir,
+                sample_id=sample.id,
+                keep_genes=pack_genes(pack) | reference_genes(pack),
+            )
             dataset.metadata.update(sample.sample_metadata or {})
+            if shipped_reference is not None:
+                signatures = shipped_reference.table
         else:
             synthetic_seed = int(params.get("seed", 42))
             dataset, signatures, ground_truth = generate_demo_dataset(
@@ -156,6 +203,20 @@ def execute_run(run_id: str) -> None:
                 for f in sorted(sample.files, key=lambda f: f.filename)
             ],
             synthetic_seed=synthetic_seed,
+            signatures=(
+                {
+                    "version": shipped_reference.version,
+                    "sha256": shipped_reference.sha256,
+                    "file": shipped_reference.file,
+                }
+                if shipped_reference is not None and visium_dir is not None
+                else None
+            ),
+            domain_model=(
+                {"version": domain_model.version, "sha256": domain_model.sha256}
+                if domain_model is not None
+                else None
+            ),
         )
         sample.spot_count = int(dataset.expression.shape[0])
         sample.status = "validated"
@@ -168,6 +229,7 @@ def execute_run(run_id: str) -> None:
             pack,
             signatures=signatures,
             params=params,
+            domain_model=domain_model,
         )
         _check_cancelled(db, run)
 

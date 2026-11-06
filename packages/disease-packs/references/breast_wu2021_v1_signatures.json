@@ -1,0 +1,27 @@
+{
+  "version": "wu2021-v1",
+  "kind": "scrna_signatures",
+  "created": "2026-11-06",
+  "source": "Wu SZ et al. A single-cell and spatially resolved atlas of human breast cancers. Nat Genet 2021;53:1334-1347. GEO GSE176078.",
+  "license": "Public GEO data; cite the publication.",
+  "excluded_patients": [
+    "CID4465",
+    "CID4535"
+  ],
+  "excluded_reason": "Held out for spatial validation (see docs/validation).",
+  "cells_per_type": {
+    "epithelial": 22142,
+    "luminal": 3227,
+    "basal": 1096,
+    "fibroblast": 10606,
+    "endothelial": 7092,
+    "t_cell": 34702,
+    "b_cell": 6435,
+    "macrophage": 9239
+  },
+  "n_genes": 408,
+  "values": "Mean fraction of transcripts per cell type (CP10k / 1e4), equal-weighted cells.",
+  "cell_type_mapping": "scripts/validation/wu2021_common.py (MAJOR_TO_PACK, NORMAL_EPITHELIAL_MINOR)",
+  "library_size_check": 0.0,
+  "sha256": "53365b26a9952c8dd5e61ba7cee73fad9b24b99557759cbc666f0e8520170f73"
+}

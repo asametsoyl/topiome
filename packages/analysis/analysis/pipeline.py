@@ -15,6 +15,7 @@ from .deconvolution import (
     method_concordance,
     nnls_deconvolve,
 )
+from .gnn import DomainModel
 from .metrics import compute_metrics
 from .qc import normalize_counts, run_qc
 from .spatial import assign_domains, smooth_composition
@@ -22,7 +23,7 @@ from .targets import score_targets
 from .types import AnalysisResult, SpatialDataset
 from .uncertainty import composition_uncertainty
 
-PIPELINE_VERSION = "0.2.0-baseline"
+PIPELINE_VERSION = "0.3.0-baseline"
 
 
 def _domain_name(domain_id: str, pack: dict) -> str:
@@ -53,12 +54,20 @@ def run_pipeline(
     reference: pd.DataFrame | None = None,
     signatures: pd.DataFrame | None = None,
     params: dict[str, Any] | None = None,
+    domain_model: DomainModel | None = None,
 ) -> AnalysisResult:
     started = time.perf_counter()
     params = params or {}
     warnings: list[str] = []
 
-    qc = run_qc(dataset.expression)
+    qc = run_qc(
+        dataset.expression,
+        precomputed=dataset.qc_stats,
+        min_counts=int(params.get("min_counts", 200)),
+        min_genes=int(params.get("min_genes", 100)),
+        max_mito_fraction=float(params.get("max_mito_fraction", 0.30)),
+        adaptive_mito=bool(params.get("adaptive_mito", True)),
+    )
     warnings.extend(qc.get("warnings", []))
     passed = np.asarray(qc["passed"], dtype=bool)
     n_spots = len(dataset.barcodes)
@@ -71,9 +80,18 @@ def run_pipeline(
 
     expression_model = dataset.expression.iloc[model_idx]
     coords_model = dataset.coordinates[model_idx]
-    norm_all = normalize_counts(dataset.expression, log=True)
+    library_size = (
+        np.asarray(dataset.qc_stats["total_counts"], dtype=float)
+        if dataset.qc_stats is not None
+        else None
+    )
+    norm_all = normalize_counts(dataset.expression, log=True, totals=library_size)
     norm_model = norm_all.iloc[model_idx]
-    linear_model = normalize_counts(expression_model, log=False)
+    linear_model = normalize_counts(
+        expression_model,
+        log=False,
+        totals=library_size[model_idx] if library_size is not None else None,
+    )
 
     method = "nnls"
     genes_used: list[str] = []
@@ -140,7 +158,42 @@ def run_pipeline(
                 f"(mean {concordance['mean_spot_agreement']:.2f}); treat compositions as uncertain."
             )
 
+    # Trained spatial GNN (real samples only) replaces k-means + marker labelling.
+    domain_method = "kmeans_markers"
+    domain_confidence: np.ndarray | None = None
+    domain_model_info: dict[str, Any] | None = None
+    if domain_model is not None:
+        coverage = domain_model.gene_coverage(norm_model.columns)
+        min_coverage = float(params.get("domain_model_min_coverage", 0.8))
+        domain_model_info = {
+            "version": domain_model.version,
+            "sha256": domain_model.sha256,
+            "gene_coverage": round(coverage, 4),
+            "test_metrics": domain_model.card.get("metrics", {}).get("test", {}),
+            "training_data": domain_model.card.get("data", {}).get("summary", ""),
+            "applied": False,
+        }
+        if dataset.metadata.get("synthetic"):
+            domain_model_info["reason"] = "Not applied to synthetic demo data."
+        elif coverage < min_coverage:
+            domain_model_info["reason"] = (
+                f"Only {coverage:.0%} of the model's genes were measured (need {min_coverage:.0%})."
+            )
+            warnings.append(f"Trained domain model skipped: {domain_model_info['reason']}")
+        else:
+            probs = domain_model.predict_proba(norm_model, coords_model, composition_model)
+            best = probs.argmax(axis=1)
+            domains_model = np.array([domain_model.classes[i] for i in best], dtype=object)
+            names_model = [_domain_name(str(d), pack) for d in domains_model]
+            cluster_ids = best
+            domain_confidence = probs.max(axis=1)
+            domain_method = "gnn"
+            domain_model_info["applied"] = True
+            domain_model_info["mean_confidence"] = round(float(domain_confidence.mean()), 4)
+
     uncertainty_model = composition_uncertainty(composition_model, residuals, agreement)
+    if domain_confidence is not None:
+        uncertainty_model = np.clip(0.6 * uncertainty_model + 0.4 * (1.0 - domain_confidence), 0, 1)
     target_scores = score_targets(norm_model, composition_model, domains_model, pack)
 
     communication: list[dict[str, Any]] = []
@@ -170,7 +223,10 @@ def run_pipeline(
             atlas_check = atlas_correspondence(
                 norm_model, domains_model, pack["atlas_reference"], exclude_genes=zone_markers
             )
-            if atlas_check.get("status") == "ok" and (atlas_check.get("diagonal_mean") or 0) < 0.1:
+            if atlas_check.get("status") == "ok" and (
+                (atlas_check.get("diagonal_mean") or 0) < 0.2
+                or (atlas_check.get("top1_accuracy") or 0) < 0.5
+            ):
                 warnings.append(
                     "Predicted zones correspond weakly to the external atlas "
                     f"({atlas_check['name']}); zone labels are low-confidence."
@@ -190,6 +246,10 @@ def run_pipeline(
     names_all[model_idx] = names_model
     uncertainty_all = np.ones(n_spots, dtype=float)
     uncertainty_all[model_idx] = uncertainty_model
+    confidence_all: np.ndarray | None = None
+    if domain_confidence is not None:
+        confidence_all = np.zeros(n_spots, dtype=float)
+        confidence_all[model_idx] = domain_confidence
 
     domains_summary: list[dict] = []
     for domain_id in sorted(set(domains_all), key=lambda d: (d == "unassigned", str(d))):
@@ -246,6 +306,11 @@ def run_pipeline(
                 "domain_name": str(names_all[i]),
                 "uncertainty": round(float(uncertainty_all[i]), 4),
                 "qc_pass": bool(passed[i]),
+                **(
+                    {"domain_confidence": round(float(confidence_all[i]), 4)}
+                    if confidence_all is not None
+                    else {}
+                ),
                 "composition": {
                     ct: round(float(comp[ct]), 4) for ct in cell_types
                 },
@@ -257,8 +322,10 @@ def run_pipeline(
         "sample_id": dataset.sample_id,
         "pipeline_version": PIPELINE_VERSION,
         "method": method,
+        "domain_method": domain_method,
         "n_spots": int(n_spots),
-        "n_genes": int(dataset.expression.shape[1]),
+        "n_genes": int(dataset.metadata.get("genes_total", dataset.expression.shape[1])),
+        "n_genes_loaded": int(dataset.expression.shape[1]),
         "passed_spots": int(passed.sum()),
         "modeled_spots": int(len(model_idx)),
         "n_domains": int(len(set(domains_model))),
@@ -312,5 +379,6 @@ def run_pipeline(
         validation={
             "method_concordance": concordance,
             "atlas_check": atlas_check,
+            "domain_model": domain_model_info,
         },
     )

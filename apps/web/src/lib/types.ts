@@ -84,6 +84,7 @@ export interface RunSummary {
   disease_pack: { id: string; name: string; version: string };
   warnings: string[];
   method_agreement?: number | null;
+  domain_method?: "gnn" | "kmeans_markers";
   significant_interactions?: number;
   not_assessed?: string[];
 }
@@ -243,7 +244,27 @@ export interface ResultPayload {
   validation?: {
     method_concordance: MethodConcordance | null;
     atlas_check: AtlasCheck | null;
+    domain_model?: DomainModelInfo | null;
   };
+}
+
+export interface DomainModelMetrics {
+  accuracy: number;
+  macro_f1: number;
+  ari: number;
+  ece?: number;
+  n_spots: number;
+}
+
+export interface DomainModelInfo {
+  version: string;
+  sha256: string;
+  gene_coverage: number;
+  applied: boolean;
+  reason?: string;
+  mean_confidence?: number;
+  training_data: string;
+  test_metrics: Record<string, Record<string, DomainModelMetrics>>;
 }
 
 export interface Interaction {
@@ -289,6 +310,82 @@ export interface AtlasCheck {
   diagonal_mean?: number | null;
   top1_accuracy?: number | null;
   n_zones_compared?: number;
+}
+
+export interface CompareRunSide {
+  label: "A" | "B";
+  run_id: string;
+  sample_id: string;
+  sample_name: string | null;
+  project_id: string;
+  disease_pack: string;
+  pack_name: string;
+  pack_version: string;
+  pipeline_version: string;
+  created_at: string;
+  finished_at: string | null;
+  synthetic: boolean;
+  n_spots: number;
+  modeled_spots: number;
+  n_domains: number;
+  n_cell_types: number;
+  method_agreement: number | null;
+  tested_interactions: number;
+  significant_interactions: number;
+  warnings: string[];
+  not_assessed: string[];
+}
+
+/** `null` on a side means that run's disease pack does not define the item. */
+export interface CompositionDelta {
+  cell_type: string;
+  a: number | null;
+  b: number | null;
+  delta: number | null;
+}
+
+export interface DomainShare {
+  id: string;
+  name: string;
+  color: string | null;
+  a_count: number | null;
+  a_pct: number | null;
+  b_count: number | null;
+  b_pct: number | null;
+  delta_pct: number | null;
+}
+
+export interface InteractionSide {
+  tested: boolean;
+  score: number | null;
+  p_value: number | null;
+  q_value: number | null;
+  significant: boolean;
+  missing: string[];
+}
+
+export interface InteractionCompare {
+  id: string;
+  name: string;
+  ligand: string;
+  receptor: string;
+  sender: string;
+  receiver: string;
+  category: string;
+  a: InteractionSide | null;
+  b: InteractionSide | null;
+}
+
+export interface RunComparison {
+  a: CompareRunSide;
+  b: CompareRunSide;
+  same_pack: boolean;
+  same_pack_version: boolean;
+  warnings: string[];
+  composition: CompositionDelta[];
+  domains: DomainShare[];
+  communication: InteractionCompare[];
+  note: string;
 }
 
 export interface CellType {

@@ -1,0 +1,75 @@
+# Topiome on one machine: PostgreSQL + API + worker + web.
+#   cp infra/.env.production.example infra/.env.production   # then fill in secrets
+#   docker compose -f infra/docker-compose.yml --env-file infra/.env.production up -d --build
+name: topiome
+
+x-api-env: &api-env
+  APP_ENV: production
+  APP_URL: ${APP_URL:?set APP_URL}
+  CORS_ORIGINS: ${APP_URL}
+  SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY}
+  DATABASE_URL: postgresql+psycopg://topiome:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db:5432/topiome
+  STORAGE_DIR: /data/storage
+  QUEUE_MODE: worker
+  MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-2048}
+  TOPIOME_GIT_COMMIT: ${TOPIOME_GIT_COMMIT:-unversioned}
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: topiome
+      POSTGRES_DB: topiome
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U topiome -d topiome"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build:
+      context: ..
+      dockerfile: infra/docker/api.Dockerfile
+    restart: unless-stopped
+    environment: *api-env
+    volumes:
+      - storage:/data/storage
+    depends_on:
+      db:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ..
+      dockerfile: infra/docker/api.Dockerfile
+    restart: unless-stopped
+    command: ["python", "-m", "app.worker"]
+    environment: *api-env
+    volumes:
+      - storage:/data/storage
+    healthcheck:
+      disable: true
+    depends_on:
+      api:
+        condition: service_healthy  # migrations have run
+
+  web:
+    build:
+      context: ..
+      dockerfile: infra/docker/web.Dockerfile
+      args:
+        API_URL: http://api:8000
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  storage:

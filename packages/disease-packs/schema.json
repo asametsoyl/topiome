@@ -80,6 +80,26 @@
         "minimum_samples": {
           "type": "integer",
           "minimum": 1
+        },
+        "version": {
+          "type": "string"
+        },
+        "signatures": {
+          "type": "object",
+          "required": [
+            "file"
+          ],
+          "properties": {
+            "file": {
+              "type": "string",
+              "pattern": "^references/[A-Za-z0-9_.-]+\\.csv(\\.gz)?$"
+            },
+            "card": {
+              "type": "string",
+              "pattern": "^references/[A-Za-z0-9_.-]+\\.json$"
+            }
+          },
+          "additionalProperties": false
         }
       }
     },
@@ -301,6 +321,28 @@
           "additionalProperties": {
             "type": "string"
           }
+        }
+      },
+      "additionalProperties": false
+    },
+    "domain_model": {
+      "type": "object",
+      "required": [
+        "file",
+        "card",
+        "version"
+      ],
+      "properties": {
+        "file": {
+          "type": "string",
+          "pattern": "^models/[A-Za-z0-9_.-]+\\.npz$"
+        },
+        "card": {
+          "type": "string",
+          "pattern": "^models/[A-Za-z0-9_.-]+\\.json$"
+        },
+        "version": {
+          "type": "string"
         }
       },
       "additionalProperties": false

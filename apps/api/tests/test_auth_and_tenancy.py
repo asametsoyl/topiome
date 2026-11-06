@@ -78,3 +78,22 @@ def test_timestamps_are_sent_as_utc(client):
     created_at = client.get("/api/v1/auth/me").json()["user"]["created_at"]
     # Without an offset browsers read the value as local time.
     assert created_at.endswith(("Z", "+00:00")), created_at
+
+
+def test_repeated_wrong_passwords_are_throttled(client):
+    user = register(client)
+    client.cookies.clear()
+    statuses = [
+        client.post(
+            "/api/v1/auth/login", json={"email": user["email"], "password": "wrong-password-x"}
+        ).status_code
+        for _ in range(11)
+    ]
+    assert statuses[:10] == [401] * 10
+    assert statuses[10] == 429
+    # Even the right password waits until the window passes.
+    blocked = client.post(
+        "/api/v1/auth/login", json={"email": user["email"], "password": user["password"]}
+    )
+    assert blocked.status_code == 429
+    assert int(blocked.headers["retry-after"]) > 0

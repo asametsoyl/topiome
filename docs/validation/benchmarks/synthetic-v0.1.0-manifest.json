@@ -1,0 +1,47 @@
+{
+  "generated_at": "2026-11-05T22:06:01.569363+00:00",
+  "python": "3.12.14",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "pipeline_version": "0.1.0-baseline",
+  "analysis_version": "0.1.0",
+  "spots_per_pack": 1200,
+  "seed": 42,
+  "packs": [
+    {
+      "id": "breast",
+      "version": "0.1.0",
+      "minimum_pass": true,
+      "target_pass": true
+    },
+    {
+      "id": "colorectal",
+      "version": "0.1.0",
+      "minimum_pass": true,
+      "target_pass": true
+    },
+    {
+      "id": "glioblastoma",
+      "version": "0.1.0",
+      "minimum_pass": true,
+      "target_pass": true
+    },
+    {
+      "id": "lung",
+      "version": "0.1.0",
+      "minimum_pass": true,
+      "target_pass": true
+    },
+    {
+      "id": "melanoma",
+      "version": "0.1.0",
+      "minimum_pass": true,
+      "target_pass": true
+    },
+    {
+      "id": "prostate",
+      "version": "0.1.0",
+      "minimum_pass": true,
+      "target_pass": true
+    }
+  ]
+}

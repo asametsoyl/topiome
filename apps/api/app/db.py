@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Generator
 from datetime import UTC, datetime
 
-from sqlalchemy import DateTime, create_engine, event
+from sqlalchemy import DateTime, create_engine, event, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.types import TypeDecorator
 
@@ -89,6 +89,9 @@ def upgrade_db(target_engine=None) -> None:  # noqa: ANN001
     config.attributes["configure_logger"] = False
 
     with target.begin() as connection:
+        if connection.dialect.name == "postgresql":
+            # Several containers may start together; only one migrates at a time.
+            connection.execute(text("SELECT pg_advisory_xact_lock(724001)"))
         config.attributes["connection"] = connection
         tables = set(inspect(connection).get_table_names())
         if "users" in tables and "alembic_version" not in tables:

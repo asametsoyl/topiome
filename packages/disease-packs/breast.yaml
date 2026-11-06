@@ -1,5 +1,5 @@
 id: breast
-version: 0.2.0
+version: 0.3.0
 status: beta
 name: Breast Cancer
 short_name: Breast
@@ -11,21 +11,26 @@ description: >
   margin, stromal and immune aggregates, and normal glandular structures.
 aliases: [BRCA, mammary carcinoma]
 reference:
+  version: wu2021-v1
+  # Real samples are deconvolved with these scRNA signatures (26-patient atlas,
+  # held-out validation patients excluded). HER2-amplified tumour and adipocytes
+  # have no scRNA counterpart, so they are not estimated on real samples.
+  signatures:
+    file: references/breast_wu2021_v1_signatures.csv.gz
+    card: references/breast_wu2021_v1_signatures.json
   scrna_sources:
-    - Tabula Sapiens (breast)
-    - Human Cell Atlas breast
-    - TCGA-BRCA derived signatures
+    - Wu et al. 2021 breast cancer atlas (GEO GSE176078)
   spatial_sources:
+    - Wu et al. 2021 Visium with pathologist annotations (Zenodo 4739739)
     - 10x Genomics Visium human breast cancer
-    - HTAN breast atlas
   minimum_samples: 3
 cell_types:
   - id: epithelial
-    name: Epithelial
+    name: Cancer epithelial
     markers: [EPCAM, KRT8, KRT18, KRT19, CDH1]
     color: "#E8B4B8"
   - id: luminal
-    name: Luminal epithelial
+    name: Luminal epithelial (normal)
     markers: [ESR1, GATA3, KRT7, FOXA1, AR]
     color: "#F2C6C2"
   - id: basal
@@ -129,10 +134,22 @@ not_assessed:
   - "ER/PR/HER2 clinical status (requires validated IHC/ISH)"
   - "Histological grade or stage"
   - "Patient prognosis, recurrence risk, or treatment response"
+domain_model:
+  file: models/breast_domain_gnn_v1.npz
+  card: models/breast_domain_gnn_v1.json
+  version: 1.0.0
 report:
   title: Breast Cancer Spatial Atlas
   sections: [summary, qc, composition, domains, targets, limitations]
 validation:
-  metrics: {}
-  last_run: null
+  # Held-out test patients CID4465 + CID4535 (docs/validation/breast-wu2021.md).
+  # Gate NOT passed: held-out ARI 0.2604 < 0.35 minimum.
+  metrics:
+    domain_model: breast_domain_gnn_v1
+    heldout_macro_f1: 0.4463
+    heldout_ari: 0.2604
+    heldout_accuracy: 0.7696
+    heldout_ece: 0.0982
+    gate_passed: false
+  last_run: "2026-11-06"
   approved_by: null

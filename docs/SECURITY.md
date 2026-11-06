@@ -16,7 +16,7 @@
 
 ## 2. Kimlik ve erişim
 
-- Şifre: Argon2id, minimum 10 karakter, breached-password kontrolü (prod).
+- Şifre: Argon2id, minimum 10 karakter; breached-password kontrolü henüz yok (Faz 2).
 - Oturum: httpOnly, Secure, SameSite=Lax; 7 gün; logout'ta iptal.
 - Roller: owner, admin, analyst, viewer.
 - MFA: Faz 2 (TOTP).
@@ -63,7 +63,7 @@ Saklama: 24 ay (kurumsal planla artırılabilir). Değiştirilemez (append-only)
 - XSS: React escape + CSP; `dangerouslySetInnerHTML` yasak.
 - CSRF: SameSite + Origin kontrolü.
 - SSRF: dış URL getirme yok (Faz 1).
-- Rate limit: login 5/dk, register 3/saat, upload 20/saat.
+- Rate limit: giriş IP + e-posta başına 15 dk / 10, IP başına 50 başarısız deneme (`429` + `Retry-After`); register/upload için henüz yok. Sayaç süreç içidir; çok worker'da ters proxy/WAF gerekir.
 - Hata mesajları: iç detay sızdırmaz; `trace_id` verir.
 - Bağımlılık: `npm audit`, `pip-audit`, Dependabot.
 
@@ -71,7 +71,7 @@ Saklama: 24 ay (kurumsal planla artırılabilir). Değiştirilemez (append-only)
 
 - Docker image: non-root, read-only root fs (mümkünse), minimal base.
 - Secret: environment/secret manager; image içine gömülmez.
-- Ağ: DB/Redis dışarı açık değil; yalnızca internal network.
+- Ağ: DB dışarı açık değil; yalnızca internal network. (Kuyruk şu an Postgres tabanlı; Redis yok.)
 - Yedek/restore testi: aylık.
 - Loglama: JSON, merkezi; 90 gün sıcak, 1 yıl arşiv.
 - İzleme: uptime, 5xx, queue depth, disk, yavaş sorgu.
@@ -93,10 +93,10 @@ Saklama: 24 ay (kurumsal planla artırılabilir). Değiştirilemez (append-only)
 
 - [ ] Secret taraması (gitleaks)
 - [ ] Bağımlılık zafiyet taraması
-- [ ] Auth/IDOR testleri
-- [ ] Yükleme limitleri ve MIME testi
-- [ ] CSP/HSTS/secure cookie
-- [ ] Audit log kapsamı
+- [x] Auth/IDOR testleri (org izolasyonu, rol kontrolü, rate limit, üretim ayar kapıları)
+- [x] Yükleme limitleri, arşiv path traversal ve format testleri
+- [x] Güvenli cookie + HSTS + `nosniff` + frame/referrer/permissions başlıkları; [ ] CSP
+- [ ] Audit log kapsamı (altyapı var, kapsam genişletilecek)
 - [ ] Yedek restore testi
 - [ ] DPA/KVKK metinleri
 - [ ] Penetrasyon testi (Faz 2)

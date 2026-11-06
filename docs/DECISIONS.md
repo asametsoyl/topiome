@@ -94,3 +94,24 @@
 **Bağlam:** `next build` "Failed to open database / invalid digit found in string" ile düşüyordu; sebep `.next/cache/turbopack` içindeki `._v16…` AppleDouble dosyaları.
 **Karar:** `turbopackFileSystemCacheForDev/Build` varsayılan kapalı; `TOPIOME_TURBOPACK_FS_CACHE=1` ile açılabilir (APFS'te).
 **Sonuç:** Derleme biraz daha yavaş ama güvenilir.
+
+## ADR-016 — Sürümlü referanslar + patolog etiketli GNN
+
+**Tarih:** 2026-11-06
+**Bağlam:** Eski GNN, pipeline'ın kendi dekonvolüsyon çıktısını hedef aldığı için döngüseldi. Gerçek doku-domain doğruluğu ölçülmemişti.
+**Karar:** Referans imzalar ve domain modelleri paket içinde sürümlenir (`references/`, `models/`) ve SHA-256 ile provenance'a yazılır. Meme modeli Wu 2021 patolog spot etiketleriyle, hasta düzeyi 4/2 split ile eğitilir; test hastaları referans, gen seçimi, epoch seçimi ve kalibrasyonda kullanılmaz. Eğitim PyTorch (offline), çıkarım NumPy (API imajında torch yok).
+**Sonuç:** Held-out ARI 0.260 < 0.35 kapısı geçilmedi → breast beta. Model gerçek örnekte uygulanır, sentetikte ve gen kapsamı < %80'de atlanır. Bağımsız kohort ve GBM modeli hâlâ yok.
+
+## ADR-017 — Redis/RQ yerine Postgres tabanlı worker kuyruğu
+
+**Tarih:** 2026-11-06
+**Bağlam:** Faz 1'de ek servis (Redis) işletme maliyeti ve hata yüzeyi getirir; run hacmi düşük.
+**Karar:** `runs.status` Postgres'te kuyruk görevi görür. API yalnızca `queued` kaydı açar; `python -m app.worker` tek UPDATE ile atomik sahiplenir. `QUEUE_MODE=inline` geliştirmede aynı kodu BackgroundTasks ile çalıştırır. Kesinti kurtarma ve `RUN_TIMEOUT_HOURS` vardır.
+**Sonuç:** Daha az bileşen, aynı izolasyon. Polling gecikmesi ~2 sn, otomatik retry/backoff yok. Ölçek/retry gerekince Redis/RQ veya Celery'ye geçilebilir; arayüz `services/queue.py` içinde izole.
+
+## ADR-018 — Docker imajlarında non-root sahiplik + exFAT build bağlamı
+
+**Tarih:** 2026-11-06
+**Bağlam:** İlk gerçek Docker build'inde API konteyneri "Could not import module app.main" verdi. Sebep: exFAT kaynak dosyaları 0700 ve `COPY` sonrası root'a aitti; `USER topiome` okuyamıyordu. Ayrıca BuildKit, `._*` AppleDouble dosyalarının xattr'ında `operation not permitted` veriyordu.
+**Karar:** API imajında kullanıcı erken oluşturulur ve tüm kaynak `COPY --chown=topiome:topiome` ile alınır. exFAT'te build, `._*` içermeyen temiz kopyadan yapılır (`docs/DEPLOY.md`).
+**Sonuç:** Dört servisli compose gerçekten build edilip healthy durumda çalıştırıldı; worker run'ı tamamladı. CI/Linux checkout'ta ek işlem gerekmez.

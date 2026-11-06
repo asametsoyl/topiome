@@ -74,6 +74,9 @@ orgs/{org_id}/
 | Human Cell Atlas | Referans | HCA kullanım koşulları |
 | Tabula Sapiens | Referans | CC BY 4.0 (doğrulanacak) |
 | TCGA | Bulk referans | TCGA veri kullanım politikası |
+| Wu et al. 2021 meme kanseri scRNA atlası (GEO GSE176078) | Meme referans imzaları (`references/breast_wu2021_v1_signatures.*`); test hastaları CID4465 ve CID4535 hariç | GEO kamu verisi; yayına atıf zorunlu |
+| Wu et al. 2021 Visium + patolog anotasyonları (Zenodo 10.5281/zenodo.4739739) | GNN eğitimi/testi (hasta düzeyinde ayrım) | CC BY 4.0 |
+| GEO GSE331374 (GSM9744831, GBM primer tümör Visium) | GBM gerçek veri kontrolü + Ivy GAP | GEO kamu verisi; atıf |
 | Ivy GAP (Allen Institute) | GBM atlas kontrolü — `packages/disease-packs/references/ivygap_gbm_ish.json` (28 gen × 5 yapı, türetilmiş ortalamalar; Glio-Cartography'den) | Allen Institute Terms of Use — **ticari kullanım teyidi bekliyor** (`license_status: review_pending`, STATUS D5) |
 
 > Her veri seti indirilmeden önce lisansı `references.yaml`'a yazılır; lisanssız veri kullanılmaz.

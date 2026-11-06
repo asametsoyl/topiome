@@ -80,3 +80,20 @@ def test_pre_alembic_database_is_stamped_then_upgraded(tmp_path):
     with engine.connect() as conn:
         assert conn.execute(text("select version_num from alembic_version")).scalar() == "0002"
     assert "provenance" in {c["name"] for c in inspect(engine).get_columns("runs")}
+
+
+def test_breast_pack_ships_pinned_reference_and_model():
+    from app.references import domain_model_for, reference_genes, signatures_for
+
+    pack = get_pack("breast")
+    signatures = signatures_for(pack)
+    model = domain_model_for(pack)
+    assert signatures.version == "wu2021-v1" and len(signatures.sha256) == 64
+    assert set(signatures.table.index) <= {ct["id"] for ct in pack["cell_types"]}
+    assert model.version == "1.0.0"
+    assert set(model.classes) <= {zone["id"] for zone in pack["zones"]}
+    assert sorted(model.genes) == sorted(signatures.table.columns)
+    assert set(model.card["data"]["test_patients"]).isdisjoint(model.card["data"]["train_patients"])
+    assert set(signatures.card["excluded_patients"]) == set(model.card["data"]["test_patients"])
+    assert len(reference_genes(pack)) >= 400
+    assert get_pack("glioblastoma").get("domain_model") is None

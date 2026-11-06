@@ -9,6 +9,7 @@ from sqlalchemy import select
 from ..config import settings
 from ..deps import CurrentAuth, DbSession, log_audit
 from ..models import Membership, Organization, User
+from ..ratelimit import LoginThrottle
 from ..schemas import LoginRequest, MeOut, RegisterRequest
 from ..security import (
     create_session_token,
@@ -19,6 +20,11 @@ from ..security import (
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+throttle = LoginThrottle(settings.login_attempts_per_window, settings.login_window_minutes)
+
+
+def _client_ip(request: Request) -> str:
+    return request.client.host if request.client else "unknown"
 
 
 def _slugify(value: str) -> str:
@@ -92,9 +98,20 @@ def login(
     response: Response,
     db: DbSession,
 ) -> MeOut:
-    user = db.scalar(select(User).where(User.email == payload.email.lower().strip()))
+    email = payload.email.lower().strip()
+    ip = _client_ip(request)
+    wait = throttle.retry_after(ip, email)
+    if wait is not None:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many sign-in attempts. Try again later.",
+            headers={"Retry-After": str(wait)},
+        )
+    user = db.scalar(select(User).where(User.email == email))
     if user is None or not user.is_active or not verify_password(payload.password, user.password_hash):
+        throttle.failed(ip, email)
         raise HTTPException(status_code=401, detail="Invalid email or password")
+    throttle.succeeded(ip, email)
 
     if needs_rehash(user.password_hash):
         user.password_hash = hash_password(payload.password)

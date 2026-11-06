@@ -8,12 +8,30 @@ from fastapi.responses import JSONResponse
 
 from .config import settings
 from .db import init_db
-from .routers import auth, dashboard, disease_packs, health, org, projects, runs, samples
+from .routers import (
+    auth,
+    compare,
+    dashboard,
+    disease_packs,
+    health,
+    org,
+    projects,
+    runs,
+    samples,
+)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    problems = settings.production_problems()
+    if problems:
+        raise RuntimeError("Refusing to start with unsafe settings: " + "; ".join(problems))
     init_db()
+    if settings.queue_mode == "inline":
+        # Inline runs live in this process; anything left over was lost in a restart.
+        from .services.queue import recover_interrupted_runs
+
+        recover_interrupted_runs()
     if settings.auto_seed and settings.is_dev:
         from .seed import ensure_seed
 
@@ -55,6 +73,8 @@ app.include_router(dashboard.router, prefix="/api/v1")
 app.include_router(disease_packs.router, prefix="/api/v1")
 app.include_router(projects.router, prefix="/api/v1")
 app.include_router(samples.router, prefix="/api/v1")
+# Before runs: `/runs/compare` must match ahead of `/runs/{run_id}`.
+app.include_router(compare.router, prefix="/api/v1")
 app.include_router(runs.router, prefix="/api/v1")
 app.include_router(org.router, prefix="/api/v1")
 

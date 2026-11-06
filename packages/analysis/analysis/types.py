@@ -22,6 +22,8 @@ class SpatialDataset:
     metadata: dict[str, Any] = field(default_factory=dict)
     image_path: str | None = None
     ground_truth: dict[str, Any] | None = None
+    # QC computed on the full count matrix before gene selection (real samples).
+    qc_stats: dict[str, Any] | None = None
 
     def __post_init__(self) -> None:
         if len(self.barcodes) != self.expression.shape[0]:

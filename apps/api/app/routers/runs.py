@@ -18,7 +18,7 @@ from ..schemas import (
     RunOut,
     SampleOut,
 )
-from ..services.pipeline import execute_run
+from ..services.queue import enqueue
 from ..services.report import build_report
 from ..services.storage import storage
 
@@ -33,7 +33,7 @@ def _get_run(db, auth: CurrentAuth, run_id: str) -> Run:
 
 
 def _enqueue(run: Run, background: BackgroundTasks) -> None:
-    background.add_task(execute_run, run.id)
+    enqueue(run.id, background)
 
 
 @router.post(

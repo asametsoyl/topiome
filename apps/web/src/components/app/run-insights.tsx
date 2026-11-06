@@ -4,7 +4,13 @@ import { CircleDot, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import type { AtlasCheck, Interaction, MethodConcordance, ResultPayload } from "@/lib/types";
+import type {
+  AtlasCheck,
+  DomainModelInfo,
+  Interaction,
+  MethodConcordance,
+  ResultPayload,
+} from "@/lib/types";
 import { cn, titleCase } from "@/lib/utils";
 
 function domainLabel(payload: ResultPayload, id: string | null | undefined) {
@@ -163,7 +169,10 @@ function AtlasBody({ atlas }: { atlas: AtlasCheck }) {
 export function ReliabilityCard({ payload }: { payload: ResultPayload }) {
   const concordance: MethodConcordance | null = payload.validation?.method_concordance ?? null;
   const atlas: AtlasCheck | null = payload.validation?.atlas_check ?? null;
+  const domainModel: DomainModelInfo | null = payload.validation?.domain_model ?? null;
   const agreementLow = concordance ? concordance.mean_spot_agreement < 0.7 : false;
+  const pooled = domainModel?.test_metrics?.gnn?.pooled;
+  const baseline = domainModel?.test_metrics?.topiome_baseline?.pooled;
 
   return (
     <Card>
@@ -190,6 +199,41 @@ export function ReliabilityCard({ payload }: { payload: ResultPayload }) {
                 }. Disagreement raises each spot's uncertainty.`
               : "Only one method ran for this sample."}
           </p>
+        </div>
+
+        <div className="space-y-2 border-t border-line pt-4">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs text-bone">Domain labelling</p>
+            <Badge variant={domainModel?.applied ? "teal" : "outline"}>
+              {domainModel?.applied ? `GNN v${domainModel.version}` : "k-means + markers"}
+            </Badge>
+          </div>
+          {domainModel ? (
+            <div className="space-y-1.5 text-[11px] leading-relaxed text-slate">
+              {domainModel.applied ? (
+                <p>
+                  Trained spatial GNN, mean confidence{" "}
+                  {domainModel.mean_confidence?.toFixed(2) ?? "—"}; gene coverage{" "}
+                  {(domainModel.gene_coverage * 100).toFixed(0)}%.
+                </p>
+              ) : (
+                <p>Trained model not applied: {domainModel.reason}</p>
+              )}
+              {pooled ? (
+                <p>
+                  Held-out test patients: macro-F1 {pooled.macro_f1.toFixed(2)}, accuracy{" "}
+                  {pooled.accuracy.toFixed(2)}
+                  {baseline ? ` (baseline macro-F1 ${baseline.macro_f1.toFixed(2)})` : ""}.
+                </p>
+              ) : null}
+              <p className="text-[10px]">{domainModel.training_data}</p>
+            </div>
+          ) : (
+            <p className="text-[11px] text-slate">
+              No trained domain model for this disease pack yet; domains come from k-means
+              clustering labelled by zone markers.
+            </p>
+          )}
         </div>
 
         <div className="space-y-2 border-t border-line pt-4">

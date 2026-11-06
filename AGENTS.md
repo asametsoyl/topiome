@@ -29,8 +29,11 @@ Yeni ürün: hastalıktan bağımsız çekirdek + bilimsel olarak doğrulanmış
 
 ## 3. Mevcut durum
 
-- Aşama: **Faz 1 — Ürün iskeleti ve çalışan dikey dilim (vertical slice)**
+- Aşama: **Faz 1 — çalışan dikey dilim + gerçek Visium/model + üretim altyapısı**
 - İlk hedef: 6 veri-zengin hastalık paketi (meme, akciğer, kolorektal, prostat, melanom, GBM) + sentetik demo veriyle uçtan uca akış.
+- Gerçek Space Ranger `.h5` / `.mtx` + spatial okuyucu hazır; Wu 2021 meme referansı ve hasta düzeyi GNN domain modeli (beta) bağlı.
+- **Bilimsel durum:** Breast ARI 0.260 < 0.35 kapısı, GBM Ivy GAP diagonal −0.179 / top-1 0.0 → **iki paket de beta**, `validated` değil. Ayrıntı: `docs/VALIDATION.md`, `docs/validation/`.
+- **Test durumu:** analiz 33, API 34 geçiyor; ruff/ESLint/tsc/`next build` temiz.
 - Detaylı yapılanlar/sıradakiler: **`docs/STATUS.md`**
 - Ürün tanımı: **`docs/PRODUCT.md`**
 - Mimari: **`docs/ARCHITECTURE.md`**
@@ -68,6 +71,19 @@ npm run build       # Next.js production build
 npm run migrate     # Alembic upgrade head (API açılışta da otomatik çalışır)
 ```
 
+Üretim kurulumu: `docs/DEPLOY.md` (Docker Compose: Postgres + API + worker + web).
+
+Gerçek veri doğrulaması (veri `data/public` altına indirilir, git'e girmez):
+
+```bash
+cd apps/api
+uv run python -I ../../scripts/validation/build_reference_wu2021.py      # meme scRNA referansı
+uv run --with torch python -I ../../scripts/validation/train_domain_gnn.py  # GNN eğitimi + test
+uv run python -I ../../scripts/validation/validate_gbm_gse331374.py      # GBM + Ivy GAP
+```
+
+Hasta düzeyindeki eğitim/test ayrımı `scripts/validation/wu2021_common.py` içindedir; test hastaları referans, gen seçimi, epoch seçimi ve kalibrasyonda **asla** kullanılmaz.
+
 ## 5. Repo haritası
 
 ```
@@ -78,9 +94,9 @@ topiome/
 │   ├── web/                   ← Next.js 16, React 19, Tailwind 4 (marketing + ürün UI)
 │   └── api/                   ← FastAPI, SQLAlchemy, auth, upload, run, report API
 ├── packages/
-│   ├── analysis/              ← Python analiz motoru (dekonvolüsyon, spatial domain, benchmark)
-│   └── disease-packs/         ← YAML hastalık paketleri + şema + doğrulama script'i
-├── docs/                      ← ürün, mimari, validasyon, marka, güvenlik, yol haritası
+│   ├── analysis/              ← Python analiz motoru (dekonvolüsyon, GNN, benchmark)
+│   └── disease-packs/         ← YAML paketler + şema + sürümlü referanslar (`references/`) + modeller (`models/`)
+├── docs/                      ← ürün, mimari, validasyon (held-out raporları `docs/validation/`), marka, güvenlik, yol haritası
 ├── infra/                     ← Docker Compose, Dockerfile, reverse proxy
 ├── scripts/                   ← setup, seed, benchmark, veri indirme
 ├── data/                      ← lokal veri (git'e girmez)
@@ -97,7 +113,7 @@ Next.js (apps/web)  ──rewrite /api/*──▶  FastAPI (apps/api)
   │                                        │
   │                                        ├── PostgreSQL / SQLite (metadata)
   │                                        ├── S3 / local storage (raw + derived data)
-  │                                        └── job queue (inline dev / Redis+RQ prod)
+  │                                        └── job queue (inline dev / DB worker prod)
   │                                                  │
   │                                                  ▼
   │                                        packages/analysis
@@ -123,7 +139,7 @@ Detay: `docs/ARCHITECTURE.md`
 | DB | PostgreSQL (prod), SQLite (dev) | JSONB, audit, çok kiracılı yapı |
 | Auth | httpOnly JWT cookie + Argon2 | Basit, sağlam, dış servise bağımlı değil |
 | Storage | Local (dev) / S3 uyumlu (prod) | Büyük dosyaları DB'ye koymamak |
-| Queue | Inline (dev) / Redis + RQ (prod) | Uzun analizleri istekten ayırmak |
+| Queue | Inline (dev) / Postgres tabanlı worker (prod) | Uzun analizleri istekten ayırmak; Redis/RQ henüz yok |
 | Analiz | NumPy/SciPy/scikit-learn baseline; ağır modeller opsiyonel extra | Hızlı kurulum; torch/scanpy her ortamda gerekmesin |
 | Deployment | Docker Compose → tek VM; sonra AWS/Fly.io | Erken aşamada düşük maliyet |
 
@@ -165,9 +181,10 @@ Detay: `docs/ARCHITECTURE.md`
 - Proje **exFAT** diskte (`/Volumes/SAMSUNG/topiome`). Symlink çalışıyor; ancak dosya sistemi yavaş. `node_modules` ve `.venv` büyükse lokal APFS'e taşımayı düşün (symlink ile).
 - Python 3.14 sistemde var; bilimsel paketler için **3.12** kullan (`uv`).
 - Ağır analiz bağımlılıkları (`torch`, `scanpy`, `tangram`, `cell2location`) varsayılan kurulumda yok; `pip install -e ".[full]"` ile gelir.
-- Stripe, SMTP ve S3 prod ayarları henüz bağlı değil; arayüzler hazır, gerçek anahtar yok.
+- Stripe, SMTP ve S3 prod ayarları henüz bağlı değil; arayüzler hazır, gerçek anahtar yok. Kuyruk Postgres tabanlıdır; Redis/RQ ve otomatik retry yok.
+- Bilimsel kapılar: **breast ARI 0.260 < 0.35**, **GBM Ivy GAP diagonal −0.179 / top-1 0.0**. İki paket de beta; "validated" veya klinik doğruluk iddiası yok.
 - Marka tescili ve domain satın alımı yapılmadı; `Topiome` çalışma adıdır.
-- exFAT'ta macOS her dosyanın yanına `._*` yazar: Turbopack dosya önbelleği kapalıdır (ADR-015); migration'ları bare `alembic` ile değil `cd apps/api && uv run python -m app.migrate …` ile çalıştır (ADR-011).
+- exFAT'ta macOS her dosyanın yanına `._*` yazar: Turbopack dosya önbelleği kapalıdır (ADR-015); migration'ları bare `alembic` ile değil `cd apps/api && uv run python -m app.migrate …` ile çalıştır (ADR-011). Docker build de `._*` xattr'ında kırılır; temiz kopya kullan (`docs/DEPLOY.md`).
 - Next.js `rewrites` hedefi (`API_URL`) `next build` anında sabitlenir; farklı portta API için yeniden derle ya da `next dev` kullan.
 - Eski ürün kodu: `~/Downloads/glio-cartography-main` (GitHub `main` indirmesi). Nelerin taşındığı/taşınmadığı: `docs/DECISIONS.md` ADR-014.
 
@@ -180,4 +197,4 @@ Detay: `docs/ARCHITECTURE.md`
 
 ---
 
-_Son güncelleme: 2026-11-06 · Faz 1 başlangıcı_
+_Son güncelleme: 2026-11-06 · Faz 1 + gerçek Visium/model + üretim worker/Docker_

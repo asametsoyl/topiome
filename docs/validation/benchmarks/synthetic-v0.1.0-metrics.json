@@ -1,0 +1,281 @@
+{
+  "generated_at": "2026-11-05T22:06:01.569363+00:00",
+  "python": "3.12.14",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "pipeline_version": "0.1.0-baseline",
+  "analysis_version": "0.1.0",
+  "spots_per_pack": 1200,
+  "seed": 42,
+  "results": [
+    {
+      "pack": "breast",
+      "pack_version": "0.1.0",
+      "dataset": "synthetic",
+      "n_spots": 1200,
+      "seed": 42,
+      "pipeline_version": "0.1.0-baseline",
+      "analysis_version": "0.1.0",
+      "method": "nnls",
+      "n_domains": 6,
+      "metrics": {
+        "jsd_mean": 0.0994,
+        "rmse": 0.0165,
+        "dominant_type_pearson": 0.8616,
+        "ari": 0.6343,
+        "nmi": 0.7828
+      },
+      "checks": {
+        "jsd_mean": {
+          "value": 0.0994,
+          "minimum_gate": 0.2,
+          "target_gate": 0.12,
+          "minimum": "pass",
+          "target": "pass"
+        },
+        "dominant_type_pearson": {
+          "value": 0.8616,
+          "minimum_gate": 0.75,
+          "target_gate": 0.85,
+          "minimum": "pass",
+          "target": "pass"
+        },
+        "ari": {
+          "value": 0.6343,
+          "minimum_gate": 0.35,
+          "target_gate": 0.55,
+          "minimum": "pass",
+          "target": "pass"
+        }
+      },
+      "minimum_pass": true,
+      "target_pass": true,
+      "warnings": [],
+      "note": "Synthetic ground truth; not a substitute for held-out real-data validation."
+    },
+    {
+      "pack": "colorectal",
+      "pack_version": "0.1.0",
+      "dataset": "synthetic",
+      "n_spots": 1200,
+      "seed": 42,
+      "pipeline_version": "0.1.0-baseline",
+      "analysis_version": "0.1.0",
+      "method": "nnls",
+      "n_domains": 6,
+      "metrics": {
+        "jsd_mean": 0.0977,
+        "rmse": 0.0185,
+        "dominant_type_pearson": 0.907,
+        "ari": 0.6227,
+        "nmi": 0.7688
+      },
+      "checks": {
+        "jsd_mean": {
+          "value": 0.0977,
+          "minimum_gate": 0.2,
+          "target_gate": 0.12,
+          "minimum": "pass",
+          "target": "pass"
+        },
+        "dominant_type_pearson": {
+          "value": 0.907,
+          "minimum_gate": 0.75,
+          "target_gate": 0.85,
+          "minimum": "pass",
+          "target": "pass"
+        },
+        "ari": {
+          "value": 0.6227,
+          "minimum_gate": 0.35,
+          "target_gate": 0.55,
+          "minimum": "pass",
+          "target": "pass"
+        }
+      },
+      "minimum_pass": true,
+      "target_pass": true,
+      "warnings": [],
+      "note": "Synthetic ground truth; not a substitute for held-out real-data validation."
+    },
+    {
+      "pack": "glioblastoma",
+      "pack_version": "0.1.0",
+      "dataset": "synthetic",
+      "n_spots": 1200,
+      "seed": 42,
+      "pipeline_version": "0.1.0-baseline",
+      "analysis_version": "0.1.0",
+      "method": "nnls",
+      "n_domains": 5,
+      "metrics": {
+        "jsd_mean": 0.0757,
+        "rmse": 0.0206,
+        "dominant_type_pearson": 0.8509,
+        "ari": 0.6022,
+        "nmi": 0.7472
+      },
+      "checks": {
+        "jsd_mean": {
+          "value": 0.0757,
+          "minimum_gate": 0.2,
+          "target_gate": 0.12,
+          "minimum": "pass",
+          "target": "pass"
+        },
+        "dominant_type_pearson": {
+          "value": 0.8509,
+          "minimum_gate": 0.75,
+          "target_gate": 0.85,
+          "minimum": "pass",
+          "target": "pass"
+        },
+        "ari": {
+          "value": 0.6022,
+          "minimum_gate": 0.35,
+          "target_gate": 0.55,
+          "minimum": "pass",
+          "target": "pass"
+        }
+      },
+      "minimum_pass": true,
+      "target_pass": true,
+      "warnings": [],
+      "note": "Synthetic ground truth; not a substitute for held-out real-data validation."
+    },
+    {
+      "pack": "lung",
+      "pack_version": "0.1.0",
+      "dataset": "synthetic",
+      "n_spots": 1200,
+      "seed": 42,
+      "pipeline_version": "0.1.0-baseline",
+      "analysis_version": "0.1.0",
+      "method": "nnls",
+      "n_domains": 6,
+      "metrics": {
+        "jsd_mean": 0.0894,
+        "rmse": 0.0176,
+        "dominant_type_pearson": 0.9512,
+        "ari": 0.6552,
+        "nmi": 0.7872
+      },
+      "checks": {
+        "jsd_mean": {
+          "value": 0.0894,
+          "minimum_gate": 0.2,
+          "target_gate": 0.12,
+          "minimum": "pass",
+          "target": "pass"
+        },
+        "dominant_type_pearson": {
+          "value": 0.9512,
+          "minimum_gate": 0.75,
+          "target_gate": 0.85,
+          "minimum": "pass",
+          "target": "pass"
+        },
+        "ari": {
+          "value": 0.6552,
+          "minimum_gate": 0.35,
+          "target_gate": 0.55,
+          "minimum": "pass",
+          "target": "pass"
+        }
+      },
+      "minimum_pass": true,
+      "target_pass": true,
+      "warnings": [],
+      "note": "Synthetic ground truth; not a substitute for held-out real-data validation."
+    },
+    {
+      "pack": "melanoma",
+      "pack_version": "0.1.0",
+      "dataset": "synthetic",
+      "n_spots": 1200,
+      "seed": 42,
+      "pipeline_version": "0.1.0-baseline",
+      "analysis_version": "0.1.0",
+      "method": "nnls",
+      "n_domains": 5,
+      "metrics": {
+        "jsd_mean": 0.0853,
+        "rmse": 0.0175,
+        "dominant_type_pearson": 0.9453,
+        "ari": 0.9663,
+        "nmi": 0.9282
+      },
+      "checks": {
+        "jsd_mean": {
+          "value": 0.0853,
+          "minimum_gate": 0.2,
+          "target_gate": 0.12,
+          "minimum": "pass",
+          "target": "pass"
+        },
+        "dominant_type_pearson": {
+          "value": 0.9453,
+          "minimum_gate": 0.75,
+          "target_gate": 0.85,
+          "minimum": "pass",
+          "target": "pass"
+        },
+        "ari": {
+          "value": 0.9663,
+          "minimum_gate": 0.35,
+          "target_gate": 0.55,
+          "minimum": "pass",
+          "target": "pass"
+        }
+      },
+      "minimum_pass": true,
+      "target_pass": true,
+      "warnings": [],
+      "note": "Synthetic ground truth; not a substitute for held-out real-data validation."
+    },
+    {
+      "pack": "prostate",
+      "pack_version": "0.1.0",
+      "dataset": "synthetic",
+      "n_spots": 1200,
+      "seed": 42,
+      "pipeline_version": "0.1.0-baseline",
+      "analysis_version": "0.1.0",
+      "method": "nnls",
+      "n_domains": 5,
+      "metrics": {
+        "jsd_mean": 0.0985,
+        "rmse": 0.0181,
+        "dominant_type_pearson": 0.8894,
+        "ari": 0.9668,
+        "nmi": 0.9273
+      },
+      "checks": {
+        "jsd_mean": {
+          "value": 0.0985,
+          "minimum_gate": 0.2,
+          "target_gate": 0.12,
+          "minimum": "pass",
+          "target": "pass"
+        },
+        "dominant_type_pearson": {
+          "value": 0.8894,
+          "minimum_gate": 0.75,
+          "target_gate": 0.85,
+          "minimum": "pass",
+          "target": "pass"
+        },
+        "ari": {
+          "value": 0.9668,
+          "minimum_gate": 0.35,
+          "target_gate": 0.55,
+          "minimum": "pass",
+          "target": "pass"
+        }
+      },
+      "minimum_pass": true,
+      "target_pass": true,
+      "warnings": [],
+      "note": "Synthetic ground truth; not a substitute for held-out real-data validation."
+    }
+  ]
+}

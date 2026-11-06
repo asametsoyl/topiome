@@ -97,6 +97,10 @@ export const apiClient = {
   run: (id: string) => api<import("./types").RunDetail>(`/runs/${id}`),
   createRun: (sampleId: string, body: { disease_pack?: string; params?: Record<string, unknown> }) =>
     api<import("./types").Run>(`/samples/${sampleId}/runs`, { method: "POST", body }),
+  compareRuns: (a: string, b: string) =>
+    api<import("./types").RunComparison>(
+      `/runs/compare?${new URLSearchParams({ a, b }).toString()}`,
+    ),
   results: (id: string) =>
     api<{ run_id: string; payload: import("./types").ResultPayload }>(`/runs/${id}/results`),
   retryRun: (id: string) => api<import("./types").Run>(`/runs/${id}/retry`, { method: "POST" }),

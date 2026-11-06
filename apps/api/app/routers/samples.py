@@ -25,12 +25,7 @@ from ..services.storage import StorageError, storage
 
 router = APIRouter(tags=["samples"])
 
-VISIUM_REQUIRED = {
-    "matrix": ("matrix.mtx", "matrix.mtx.gz"),
-    "barcodes": ("barcodes.tsv", "barcodes.tsv.gz"),
-    "features": ("features.tsv", "features.tsv.gz", "genes.tsv", "genes.tsv.gz"),
-    "positions": ("tissue_positions.csv", "tissue_positions_list.csv"),
-}
+ARCHIVES = (".zip", ".tar.gz", ".tgz", ".tar")
 
 
 def _safe_filename(name: str) -> str:
@@ -40,14 +35,23 @@ def _safe_filename(name: str) -> str:
 
 
 def _has_visium_files(names: list[str]) -> tuple[bool, list[str]]:
+    """Cheap upload-time check; the full check runs when the archive is unpacked."""
     lower = [name.lower() for name in names]
-    if any(name.endswith(".zip") for name in lower):
-        return True, []
-    missing = [
-        key
-        for key, candidates in VISIUM_REQUIRED.items()
-        if not any(name.endswith(candidates) for name in lower)
-    ]
+    archives = [name for name in lower if name.endswith(ARCHIVES)]
+    has_h5 = any(name.endswith(".h5") for name in lower)
+    has_mtx = (
+        any(name.endswith(("matrix.mtx", "matrix.mtx.gz")) for name in lower)
+        and any("barcodes" in name for name in lower)
+        and any("features" in name or "genes" in name for name in lower)
+    )
+    has_positions = any("tissue_positions" in name and name.endswith(".csv") for name in lower)
+    if archives and not (has_h5 or has_mtx or has_positions):
+        return True, []  # one archive with everything inside
+    missing = []
+    if not (has_h5 or has_mtx or archives):
+        missing.append("count matrix (filtered_feature_bc_matrix.h5, or matrix.mtx + barcodes.tsv + features.tsv)")
+    if not (has_positions or archives):
+        missing.append("tissue_positions.csv (or the spatial/ folder as .tar.gz)")
     return not missing, missing
 
 
@@ -142,7 +146,11 @@ async def create_sample(
             SampleFile(
                 sample_id=sample.id,
                 filename=filename,
-                kind="visium" if filename.endswith((".mtx", ".mtx.gz", ".zip")) else "data",
+                kind=(
+                    "visium"
+                    if filename.lower().endswith((".mtx", ".mtx.gz", ".h5", *ARCHIVES))
+                    else "data"
+                ),
                 size_bytes=size,
                 sha256=digest,
                 storage_key=f"{raw_key}/{filename}",

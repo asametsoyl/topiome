@@ -164,6 +164,84 @@ class ResultOut(BaseModel):
     payload: dict[str, Any]
 
 
+# ── Run comparison ──────────────────────────────────────────────────────────
+
+
+class CompareRunSide(BaseModel):
+    label: str
+    run_id: str
+    sample_id: str
+    sample_name: str | None
+    project_id: str
+    disease_pack: str
+    pack_name: str
+    pack_version: str
+    pipeline_version: str
+    created_at: datetime
+    finished_at: datetime | None
+    synthetic: bool
+    n_spots: int
+    modeled_spots: int
+    n_domains: int
+    n_cell_types: int
+    method_agreement: float | None
+    tested_interactions: int
+    significant_interactions: int
+    warnings: list[str]
+    not_assessed: list[str]
+
+
+class CompositionDelta(BaseModel):
+    cell_type: str
+    a: float | None  # mean proportion in run A; None if A's pack lacks this cell type
+    b: float | None
+    delta: float | None  # b - a
+
+
+class DomainShare(BaseModel):
+    id: str
+    name: str
+    color: str | None
+    a_count: int | None  # None if A's pack does not define this domain
+    a_pct: float | None  # % of spots
+    b_count: int | None
+    b_pct: float | None
+    delta_pct: float | None  # b_pct - a_pct, percentage points
+
+
+class InteractionSide(BaseModel):
+    tested: bool
+    score: float | None
+    p_value: float | None
+    q_value: float | None
+    significant: bool
+    missing: list[str]
+
+
+class InteractionCompare(BaseModel):
+    id: str
+    name: str
+    ligand: str
+    receptor: str
+    sender: str
+    receiver: str
+    category: str
+    a: InteractionSide | None  # None if A's pack does not define this pair
+    b: InteractionSide | None
+
+
+class RunComparisonOut(BaseModel):
+    a: CompareRunSide
+    b: CompareRunSide
+    same_pack: bool
+    same_pack_version: bool
+    warnings: list[str]
+    composition: list[CompositionDelta]
+    domains: list[DomainShare]
+    communication: list[InteractionCompare]
+    note: str
+
+
 # ── Dashboard / org ─────────────────────────────────────────────────────────
 
 

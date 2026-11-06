@@ -22,7 +22,7 @@ scRNA-seq'den hücreleri karıştırarak sentetik spotlar üret. Kompozisyon bil
 - Amaç: dekonvolüsyon algoritmasının matematiksel doğruluğu.
 
 ### B. Held-out gerçek örnek
-Aynı çalışmadan değil, **bağımsız çalışmalardan** test örnekleri.
+İdeal olarak **bağımsız çalışmalardan** test örnekleri. İlk uygulama Wu 2021 içinde yalnızca hasta düzeyi held-out'dır (4 eğitim / 2 test); bağımsız kohort henüz yoktur.
 - Annotasyonlu bölgeler varsa: ARI, NMI, adjusted Rand.
 - Yoksa: marker enrichment, pathologist spot-check, silüet.
 - Amaç: genellenebilirlik.
@@ -133,3 +133,31 @@ uv run python -m analysis.benchmark --pack breast --dataset synthetic --out ../.
 - Benchmark kodu ve sentetik veri üretimi açık; gerçek hasta verisi açık değil.
 - Yayınlarda kullanılan parametreler ve sürümler ek olarak paylaşılır.
 - "Topiome ile üretildi" ifadesi için sürüm numarası zorunlu.
+
+## 10. Uygulanan doğrulamalar (2026-11-06)
+
+### Meme — Wu et al. 2021 domain modeli
+
+- **Split:** hasta düzeyi; eğitim 1142243F, 1160920F, CID4290, CID44971; test CID4465, CID4535. Test hastaları referans, gen seçimi, epoch seçimi ve kalibrasyonda kullanılmadı.
+- **Model:** `breast_domain_gnn_v1` v1.0.0, 2 katman GraphSAGE (6-NN), NumPy çıkarım.
+- **Held-out pooled (2.235 spot):**
+
+| Model | Accuracy | Macro-F1 | ARI | ECE |
+|---|---:|---:|---:|---:|
+| GNN | 0.770 | 0.446 | 0.260 | 0.098 |
+| MLP (grafsız) | 0.739 | 0.386 | 0.191 | 0.136 |
+| Topiome baseline | 0.325 | 0.210 | 0.011 | — |
+| Always tumor | 0.856 | 0.231 | 0.000 | — |
+
+- **Kapı:** ARI 0.260 < 0.35 minimum; Macro-F1 0.446 < 0.65 minimum → **breast pack beta**, `validated` değil.
+- **Sınır:** tek çalışma/tek merkez, 6 hasta; test seti tümör ağırlıklı; nadir sınıflarda az spot. Ayrıntı: `docs/validation/breast-wu2021.md`.
+
+### GBM — GSE331374 gerçek veri + Ivy GAP
+
+- 2.930 doku spotu, 36.601 gen, 2.727 QC-pass; referans/domain modeli yok, marker-score baseline.
+- Yöntem uyumu 0.656; Ivy GAP diagonal ort. **−0.179**, top-1 **0.0** (4 zon).
+- **Kapı:** zon-atlas uyumu yok → **GBM pack beta**; eğitilmiş GBM referansı/domain modeli gelene kadar zon etiketi iddiası yok. Ayrıntı: `docs/validation/gbm-gse331374.md`.
+
+### Sentetik benchmark (altı paket)
+
+`docs/validation/benchmarks/synthetic-v0.1.0-metrics.json` — 1.200 spot; altı paket minimum ve hedef pseudospot eşiklerini geçti (breast JSD 0.099/r 0.862/ARI 0.634; GBM JSD 0.076/r 0.851/ARI 0.602). Bu yalnızca matematiksel geri kazanım testidir; gerçek veri/clinical validation değildir. Yeniden üretmek için benchmark CLI'yi çalıştırın (`data/benchmarks/` çıktısı git'e girmez).

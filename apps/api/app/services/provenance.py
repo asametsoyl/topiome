@@ -86,6 +86,8 @@ def build_provenance(
     input_kind: str,
     input_files: list[dict[str, Any]],
     synthetic_seed: int | None = None,
+    signatures: dict[str, Any] | None = None,
+    domain_model: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return {
         "recorded_at": datetime.now(UTC).isoformat(),
@@ -96,7 +98,8 @@ def build_provenance(
             "status": pack.get("status", ""),
             "sha256": pack_fingerprint(pack),
         },
-        "reference": reference_info(pack),
+        "reference": {**reference_info(pack), "signatures": signatures},
+        "domain_model": domain_model,
         "params": params,
         "input": {
             "kind": input_kind,

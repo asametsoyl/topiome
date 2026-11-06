@@ -10,6 +10,12 @@ API_DIR = Path(__file__).resolve().parents[1]
 PACKS_DIR = ROOT / "packages" / "disease-packs"
 
 
+DEFAULT_SECRETS = {
+    "dev-only-change-me-please-32-characters-minimum",
+    "change-me-to-a-long-random-string-at-least-32-chars",
+}
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=(ROOT / ".env", API_DIR / ".env"),
@@ -30,7 +36,10 @@ class Settings(BaseSettings):
     storage_dir: str = "./storage"
 
     redis_url: str = "redis://localhost:6379/0"
-    queue_mode: str = "inline"
+    queue_mode: str = "inline"  # inline (dev) | worker (prod: python -m app.worker)
+    run_timeout_hours: float = 6.0
+    login_attempts_per_window: int = 10
+    login_window_minutes: int = 15
 
     allow_demo_login: bool = True
     auto_seed: bool = True
@@ -42,6 +51,21 @@ class Settings(BaseSettings):
 
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
+
+    def production_problems(self) -> list[str]:
+        """Settings that are unsafe outside development."""
+        if self.is_dev:
+            return []
+        problems = []
+        if self.secret_key in DEFAULT_SECRETS or len(self.secret_key) < 32:
+            problems.append("SECRET_KEY must be a random string of at least 32 characters")
+        if self.database_url.startswith("sqlite"):
+            problems.append("DATABASE_URL should point to PostgreSQL in production")
+        if self.allow_demo_login:
+            problems.append("ALLOW_DEMO_LOGIN should be false in production")
+        if self.queue_mode not in {"inline", "worker"}:
+            problems.append("QUEUE_MODE must be 'inline' or 'worker'")
+        return problems
 
     @property
     def cors_origin_list(self) -> list[str]:
