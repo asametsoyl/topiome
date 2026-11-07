@@ -147,6 +147,7 @@ def main() -> None:
     )
     parser.add_argument("--bootstrap-resamples", type=int, default=2000)
     parser.add_argument("--seed", type=int, default=20261107)
+    parser.add_argument("--commit", default=None)
     args = parser.parse_args()
 
     dataset = load_pie_dataset(args.data_dir)
@@ -212,6 +213,20 @@ def main() -> None:
     ).summary()
 
     results: dict[str, Any] = {
+        "dataset": "PIE Replogle-Nadig essential Perturb-seq (4 cell lines)",
+        "source": "https://huggingface.co/datasets/arcinstitute/PIE_replogle_nadig_essential",
+        "splits": "https://huggingface.co/datasets/arcinstitute/PIE_splits",
+        "sources": "https://huggingface.co/datasets/arcinstitute/PIE_sources",
+        "code": "scripts/perturbation/explore_replogle_unseen_pert.py",
+        "commit": args.commit,
+        "license_note": (
+            "PIE and PIE_sources dataset cards have no license field. The original "
+            "studies are public, but commercial-use terms are not verified. This run "
+            "is research-only."
+        ),
+        "bootstrap_resamples": args.bootstrap_resamples,
+        "seed": args.seed,
+        "selection": "validation mean row RMSE",
         "fold": args.fold,
         "setting": "unseen_pert",
         "rows": {
