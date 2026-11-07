@@ -360,7 +360,7 @@ export default function DashboardPage() {
               <CircleDot className="mt-0.5 size-3.5 shrink-0 text-teal" />
               <p>
                 Upload only data your lab is authorized to process. Do not upload directly
-                identifying information; follow your institution's ethics and governance rules.
+                identifying information; follow your institution&apos;s ethics and governance rules.
               </p>
             </div>
             <div className="flex items-start gap-2.5">

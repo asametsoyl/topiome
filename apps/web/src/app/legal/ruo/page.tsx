@@ -14,7 +14,7 @@ export default function RuoPolicyPage() {
 
       <LegalSection title="1. Intended use">
         <p>
-          Topiome's research direction is exploratory computational biology: evaluating whether models can predict measured cellular responses to genetic perturbations in defined experimental contexts.
+          Topiome&apos;s research direction is exploratory computational biology: evaluating whether models can predict measured cellular responses to genetic perturbations in defined experimental contexts.
         </p>
         <p>
           Topiome is not intended for diagnosis, prognosis, treatment selection, patient management, or clinical decision-making. No output is a therapeutic recommendation or evidence that an intervention will work in a person.

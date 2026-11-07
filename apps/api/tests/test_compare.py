@@ -40,7 +40,9 @@ def test_compare_same_pack_side_by_side(client):
     assert data["same_pack"] is True
     assert data["same_pack_version"] is True
     assert data["a"]["method_agreement"] > 0
-    assert data["a"]["tested_interactions"] == 10
+    # Synthetic demo data must not carry ligand–receptor test results.
+    assert data["a"]["tested_interactions"] == 0
+    assert data["a"]["significant_interactions"] == 0
     assert data["a"]["significant_interactions"] == run_a["summary"]["significant_interactions"]
     assert any("MGMT" in item for item in data["a"]["not_assessed"])
     assert not any("different" in warning for warning in data["warnings"])

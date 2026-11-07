@@ -185,7 +185,10 @@ def test_pipeline_reports_concordance_communication_and_limits(all_packs):
     assert concordance["methods"] == ["nnls_reference", "marker_zscore_softmax"]
     assert 0 <= concordance["mean_spot_agreement"] <= 1
     assert len(payload["communication"]) == len(pack["ligand_receptor_pairs"])
-    assert all(c["tested"] for c in payload["communication"])
+    # Communication scores are not estimated on synthetic demo data; the gap
+    # must stay explicit rather than producing plausible-looking p-values.
+    assert all(not c["tested"] for c in payload["communication"])
+    assert all(c["missing"] == ["synthetic demo data"] for c in payload["communication"])
     # The Ivy GAP comparison must never run on synthetic data.
     assert payload["validation"]["atlas_check"]["status"] == "skipped_synthetic"
     assert payload["summary"]["not_assessed"] == pack["not_assessed"]

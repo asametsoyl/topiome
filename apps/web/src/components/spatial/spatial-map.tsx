@@ -143,8 +143,15 @@ export function SpatialMap({
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [hovered, setHovered] = useState<number | null>(null);
   const [tooltip, setTooltip] = useState({ x: 0, y: 0 });
-  const [tissueImage, setTissueImage] = useState<{ bitmap: ImageBitmap; hiresScale: number } | null>(null);
-  const [imageChecked, setImageChecked] = useState(false);
+  const [tissueImageState, setTissueImageState] = useState<{
+    url?: string;
+    checked: boolean;
+    image: { bitmap: ImageBitmap; hiresScale: number } | null;
+  }>({ checked: false, image: null });
+  // Derive per-URL state so a new image never renders with the previous
+  // bitmap or "checked" flag while its fetch is still in flight.
+  const tissueImage = imageUrl && tissueImageState.url === imageUrl ? tissueImageState.image : null;
+  const imageChecked = imageUrl ? tissueImageState.url === imageUrl && tissueImageState.checked : true;
   const [showTissue, setShowTissue] = useState(true);
   const [roiMode, setRoiMode] = useState(false);
   const [lasso, setLasso] = useState<{ x: number; y: number }[]>([]);
@@ -167,14 +174,9 @@ export function SpatialMap({
   const geneThresholdValue = sharedGeneThreshold ?? geneThreshold;
 
   useEffect(() => {
+    if (!imageUrl) return;
     let active = true;
     let bitmap: ImageBitmap | null = null;
-    setImageChecked(false);
-    setTissueImage(null);
-    if (!imageUrl) {
-      setImageChecked(true);
-      return;
-    }
     fetch(imageUrl, { credentials: "same-origin" })
       .then(async (response) => {
         if (!response.ok) throw new Error("Tissue image is unavailable");
@@ -182,15 +184,13 @@ export function SpatialMap({
         if (!Number.isFinite(hiresScale) || hiresScale <= 0) throw new Error("Invalid Visium image scale");
         bitmap = await createImageBitmap(await response.blob());
         if (active) {
-          setTissueImage({ bitmap, hiresScale });
-          setImageChecked(true);
+          setTissueImageState({ url: imageUrl, checked: true, image: { bitmap, hiresScale } });
         }
         else bitmap.close();
       })
       .catch(() => {
         if (active) {
-          setTissueImage(null);
-          setImageChecked(true);
+          setTissueImageState({ url: imageUrl, checked: true, image: null });
         }
       });
     return () => {

@@ -251,7 +251,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div>
               <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-amber">Legacy spatial workspace</p>
               <p className="mt-1 max-w-3xl text-[11px] leading-5 text-bone-dim">
-                This workspace runs the archived spatial-transcriptomics pipeline. It is separate from Topiome's new perturbation-response research direction, which has no validated model yet.
+                This workspace runs the archived spatial-transcriptomics pipeline. It is separate from Topiome&apos;s new perturbation-response research direction, which has no validated model yet.
               </p>
             </div>
             <Link href="/#status" className="inline-flex shrink-0 items-center gap-1.5 text-[10px] font-medium text-teal hover:text-[#125f50]">
