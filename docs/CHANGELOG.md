@@ -14,6 +14,14 @@ Tüm önemli değişiklikler burada. Format: [Keep a Changelog](https://keepacha
 - Arc VCC 2025 / PIE'dan 49.3 MB ön işlenmiş aggregate etki verisi alındı ve kaynak hash'leri doğrulandı; 146/44 unseen-target split'te zero ve gen-ortalaması baseline'ları çalıştırıldı. Ham 15.5 GB hücre matrisi alınmadı.
 - İlk baseline raporu ve tekrarlanabilir runner eklendi; yalnız tek H1 bağlamındaki population-level etkileri değerlendirir, model veya single-cell validation iddiası içermez.
 
+### 2026-11-07 — Bağımsız X-Atlas/Orion tekrarı başarısız
+
+- PIE X-Atlas/Orion preprocessed array'leri indirildi; `lfc_true.npy` (2,36 GB) ve `tested.npy` (295 MB) SHA-256 ile doğrulandı. 13.284 satır, 22.182 gen, 2 bağlam, 10.007 perturbasyon; iki bağlamda 3.277 ortak perturbasyon. Lisans CC BY-NC-SA 4.0; yalnız araştırma.
+- Bağımsız tekrar protokolü, Orion `lfc_true.npy` indirilmeden ve hiçbir test metriği hesaplanmadan `9122ebf` ile donduruldu. Beta, Replogle sonucundan 0,25 olarak sabitlendi; doğrulama seti yok ve beta Orion test etiketlerinden seçilmedi.
+- Ön kayıtlı bağımsız tekrar **başarısız**: sayısal kapı 0/2, sıralama kapısı 1/2. HCT116→HEK293T'de aday RMSE 0,9789 vs zero 0,2389 (göreli −%309,70); HEK293T→HCT116'de 0,5581 vs 0,3436 (−%62,46). Aday global mean'den de kötü; ortak-destek ve üst-çeyrek alt kümelerinde üstünlük yok.
+- Görülmemiş-bağlam hattı bu veri ve görevde durduruldu; aynı Orion test setinde beta veya metrik değiştirilerek yeniden denenmeyecek. Replogle-Nadig içi 3/3 sonucu bağımsız tekrar olarak sunulmayacak.
+- `analysis.perturbation` için tek-bağlam doldurma (`filled_perturbation_mean_map`) ve ortak-destek skorlama eklendi; analiz test sayısı 11'e çıktı. Sonuç `data/perturbation/processed/orion-unseen-ctx-gate.json`, kod `scripts/perturbation/benchmark_orion_transfer.py`.
+
 ### 2026-11-07 — Replogle-Nadig görülmemiş-bağlam kapısı ve negatif perturbasyon kontrolü
 
 - PIE Replogle-Nadig essential Perturb-seq preprocessed array'leri ve PIE canonical split'leri indirildi; 5.459 satır, 6.642 gen, 4 hücre hattı, 1.857 perturbasyon. Split satırları, bağlam izolasyonu ve test perturbasyon kapsaması doğrulandı.

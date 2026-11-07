@@ -185,12 +185,12 @@ export default function HomePage() {
                 <p className="mono-label">Current status</p>
                 <h2 className="display mt-4 text-4xl text-bone sm:text-5xl">A research program, not a finished product.</h2>
               </div>
-              <p className="max-w-md text-xs leading-6 text-bone-dim">An initial public perturbation dataset is curated and simple baselines are being measured. Prospective biological validation will require an experimental research partner.</p>
+              <p className="max-w-md text-xs leading-6 text-bone-dim">Three public perturbation benchmark sources are curated. The in-dataset unseen-context signal did not replicate on an independent dataset, so that line is stopped. Prospective biological validation will require a new research question and an experimental partner.</p>
             </div>
             <div className="mt-9 grid gap-3 sm:grid-cols-3">
               {[
-                { title: "Public data", state: "Initial set curated", icon: FlaskConical },
-                { title: "Prediction benchmark", state: "Baseline stage", icon: GitBranch },
+                { title: "Public data", state: "Three benchmark sources", icon: FlaskConical },
+                { title: "Prediction benchmark", state: "Independent replication failed", icon: GitBranch },
                 { title: "Independent experiments", state: "Partner required", icon: ShieldCheck },
               ].map((item) => {
                 const Icon = item.icon;

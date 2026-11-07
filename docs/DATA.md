@@ -42,6 +42,16 @@ Veri hücre başına satırlardan ibaret değildir: gözlem, perturbasyon, kontr
 - 1.857 perturbasyonun sırasıyla 47/22/53'ünde kapsam eksiktir; eksikler eğitim perturbasyon sütun ortalamasıyla doldurulur.
 - Veri kartlarında lisans alanı yok. DepMap zaten perturbasyon yanıtı/essentiality verisi olduğu için olası sızıntı riski taşır. Bu kaynaklar onaylayıcı bağlam kapısına sokulmadı; yalnız `unseen_pert` keşifsel kontrolünde kullanıldı ve ticari kullanım için uygun sayılmaz.
 
+## 2c. Üçüncü veri bileşeni — PIE X-Atlas/Orion
+
+- Kaynak: [arcinstitute/PIE_x_atlas_orion](https://huggingface.co/datasets/arcinstitute/PIE_x_atlas_orion), commit `abfa3da0f3bb98c9df9c90082386ed0c7c9282d3`, `preprocessed/` array'leri.
+- Özgün çalışma: Huang et al. 2025, X-Atlas/Orion genome-wide CRISPRi Perturb-seq; HCT116 ve HEK293T.
+- Yerel subset: `data/perturbation/raw/pie-x-atlas-orion/preprocessed/`; `lfc_true.npy` (2,36 GB), `tested.npy` (295 MB), `meta.json`, `contexts.yaml`, `ctx_ids.npy`, `pert_ids.npy`, `ctrl_means.npy`; toplam yaklaşık 2,65 GB. `de/` parquet dosyaları indirilmedi.
+- Boyut: 13.284 (bağlam, perturbasyon) satırı; 22.182 gen; 2 bağlam; 10.007 perturbasyon. İki bağlamda ortak 3.277 perturbasyon. HCT116 8.987 satır, HEK293T 4.297 satır.
+- Lisans: **CC BY-NC-SA 4.0**; ticari kullanım yok. Kaynak/hash kaydı: `data/perturbation/raw/pie-x-atlas-orion/preprocessed/manifest.json`. `lfc_true.npy` SHA-256 `078cb346a4e3a025edc3d4ca1e9ba6c8717ee7b54d73941591838b4d21b64ec8`; `tested.npy` `fcb837692e06e1e712c6b3d6cc3602497e2fdc1211598ce73fcafa0eedd79e57`.
+- Kullanım: bağımsız görülmemiş-bağlam transferi tekrarı; iki simetrik fold (`hct116_to_hek293t`, `hek293t_to_hct116`), 3.277 ortak perturbasyon, beta=0,25 önceden sabit. Sonuç negatif; ayrıntı `docs/VALIDATION.md` bölüm 13. Bu veri seti ticari ürün/eğitim için kullanılmaz.
+- Sınır: aggregate log2 fold-change; tek hücre dağılımı, doz/zaman, perturbasyon verimliliği ve bağımsız biyolojik tekrar yok. Orion ve Replogle-Nadig aynı CRISPRi Perturb-seq ailesindendir; assay platformu bağımsızlığı yoktur.
+
 ## 3. Kaynak havuzu ve sonraki adaylar
 
 **Arc Virtual Cell Atlas** açık tek hücre ve perturbasyon koleksiyonları sağlıyor: <https://arcinstitute.org/tools/virtualcellatlas>. Arc sayfası VCC 2025 ile Tahoe-100M verilerini CC0 olarak listeliyor; her bileşen için kayıt, README, alıntı ve lisans ayrı doğrulanmalı. Tüm koleksiyon MVP için indirilmeyecek. Önce küçük ve değerlendirilebilir tek bir görev seçilecek.

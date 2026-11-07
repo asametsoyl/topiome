@@ -1,6 +1,6 @@
 # Doğrulama — perturbasyon yanıtı araştırması
 
-**Durum (2026-11-07):** ön kayıtlı görülmemiş-bağlam transfer kapısı üç onaylayıcı hücre hattında geçti. Bu, ölçülmüş perturbasyon etkilerinin basit ölçeklemeyle yeni bir hücre hattına taşınabildiğini gösteren dar bir hesaplamalı sinyaldir; Topiome'un eğitilmiş/doğrulanmış modeli, görülmemiş-perturbasyon sonucu veya prospektif doğrulaması yoktur. Görülmemiş-perturbasyon keşifsel kontrolü negatiftir.
+**Durum (2026-11-07):** Replogle-Nadig içi ön kayıtlı görülmemiş-bağlam kapısı 3/3 onaylayıcı hücre hattında geçti; ancak bağımsız X-Atlas/Orion tekrarı 0/2 sayısal fold ile başarısız oldu. Görülmemiş-bağlam hattı bu veri ve görevde durduruldu. Topiome'un eğitilmiş/doğrulanmış modeli, bağımsız olarak tekrarlanmış bir transfer sinyali, görülmemiş-perturbasyon sonucu veya prospektif doğrulaması yoktur.
 
 ## 1. Test edilecek bilimsel iddia
 
@@ -140,3 +140,28 @@ Her koşuda veri source ID/hash/lisans, perturbasyon tanımı, bağlam, kontrol,
 - Test RMSE'sine göre en iyi görünen DepMap alpha=10.000 (0,6966, +%1,42) doğrulama tarafından seçilmedi; test setine bakarak model seçmek sızıntı olur ve bu sonuç kullanılmaz.
 - Sonuç: hiçbir basit özellik modeli bağlam ortalamasını RMSE, korelasyon ve top-50 birlikte geçmedi. DepMap zaten perturbasyon yanıtı/essentiality verisi olduğu için olası sızıntı riski taşır; buna rağmen net üstünlük yok. Görülmemiş-perturbasyon hattı bu veri ve görevde durduruldu; daha zengin veri veya farklı bilimsel soru olmadan karmaşık model denenmeyecek.
 - Çıktı: `data/perturbation/processed/replogle-unseen-pert-exploratory.json`. Script: `scripts/perturbation/explore_replogle_unseen_pert.py`. PIE_sources kartlarında lisans alanı yok; yalnız araştırma amaçlıdır.
+
+## 13. Bağımsız görülmemiş bağlam tekrarı — X-Atlas/Orion (negatif)
+
+**Durum:** ön kayıtlı bağımsız tekrar **başarısız**. Sayısal transfer kapısı 0/2 fold, sıralama kapısı 1/2 fold geçti. Ön kayıtta yazıldığı gibi görülmemiş-bağlam hattı bu veri ve görevde durduruldu; aynı Orion test setinde beta veya metrik değiştirilerek yeniden denenmeyecek.
+
+- Ön kayıt: `docs/experiments/2026-11-07-orion-unseen-context-preregistration.md`; Orion `lfc_true.npy` indirilmeden ve hiçbir test metriği hesaplanmadan `9122ebf` ile donduruldu.
+- Veri: `arcinstitute/PIE_x_atlas_orion`, commit `abfa3da0f3bb98c9df9c90082386ed0c7c9282d3`; X-Atlas/Orion genome-wide CRISPRi Perturb-seq, HCT116 ve HEK293T. 13.284 satır, 22.182 gen, 2 bağlam, 10.007 perturbasyon; iki bağlamda ortak 3.277 perturbasyon. Lisans CC BY-NC-SA 4.0; yalnız araştırma.
+- Split: ortak 3.277 perturbasyon; iki simetrik fold. `hct116_to_hek293t` HCT116'da eğitip HEK293T'de test eder; `hek293t_to_hct116` tersini yapar. Doğrulama seti yoktur; beta, Replogle-Nadig sonucundan önce sabitlenen **0,25** değeridir ve Orion test etiketlerinden seçilmemiştir. Test perturbasyon kapsaması 1,0; bağlam ve satır sızıntısı yok.
+- Aday: `g + 0,25 × (m_p − g)`; `g` eğitim bağlamının gen ortalaması, `m_p` perturbasyonun eğitim bağlamındaki etkisi; eğitim satırında test edilmemiş genler `g` ile dolduruldu.
+- Baseline'lar: zero, global mean `g`, ölçeksiz `m_p`, merkezlenmiş `m_p − g`.
+
+| Fold | zero RMSE | global mean RMSE | aday RMSE | göreli iyileşme (zero) | medyan r | global r | top-50 | global top-50 | sayısal | sıralama |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---|
+| HCT116→HEK293T | 0,2389 | 0,9766 | 0,9789 | −%309,70 | 0,022 | 0,019 | 0,0116 | 0,0106 | başarısız | başarısız |
+| HEK293T→HCT116 | 0,3436 | 0,5579 | 0,5581 | −%62,46 | 0,048 | 0,045 | 0,0372 | 0,0361 | başarısız | geçti |
+
+- Bootstrap (paired, 2.000 yeniden örnekleme, birim bağlam–perturbasyon satırı): aday zero'ya göre HCT116→HEK293T'de **−0,7400** [−0,7423, −0,7377], HEK293T→HCT116'de **−0,2146** [−0,2165, −0,2126]. Aday global mean'e göre de biraz kötü: −0,00227 [−0,00252, −0,00204] ve −0,000266 [−0,000463, −0,000066]. Yani aday yalnız zero'dan değil, global mean'den de istatistiksel olarak kötü.
+- Birleşik tanımlayıcı özet (6.554 satır): zero RMSE 0,2912, global mean 0,7672, aday 0,7685; aday zero'ya göre −0,4773 [−0,4836, −0,4711], global mean'e göre −0,00127 [−0,00143, −0,00111].
+- İkincil tanımlayıcı analizler de negatif:
+  - Eğitim etkisi üst çeyreğinde (820 perturbasyon) aday zero'dan kötü: 1,0417 vs 0,3770 (HCT116→HEK293T) ve 0,7587 vs 0,6138 (HEK293T→HCT116).
+  - Eğitim ve test satırında ortak test edilmiş genlerde aday yine zero'dan kötü: 0,2294 vs 0,2016 ve 0,3150 vs 0,3113. Bu, farkın yalnız gen kapsama farkından kaynaklanmadığını gösterir.
+  - 20 etiket permütasyonunda aday permütasyon ortalamasından çok az iyi (0,9789 vs 0,9802; 0,5581 vs 0,5604), ama ikisi de zero'dan çok kötü. Perturbasyona özgü zayıf bir eşleşme olabilir; baskın hata global mean bileşenindedir.
+- Post-hoc ölçek tanısı (yalnız açıklama; yeni model seçimi değil): etiketlerden bağımsız seçilmiş 500 ortak perturbasyonda bağlamlar arası satır korelasyonunun medyanı ~0,021, 90. yüzdelik 0,1395, 99. yüzdelik 0,704. Eğitim/test global mean vektörlerinin RMS'i 1,386/0,806, korelasyonu 0,135. Test üzerinde oracle beta (yalnız tanı) 0,046 (HCT116→HEK293T) ve 0,125 (HEK293T→HCT116). Replogle'da seçilen beta=0,25 Orion için fazla büyük; daha önemlisi, eğitim bağlamının global mean'i test bağlamına taşınmıyor. Bu tanı, ön kayıtlı beta=0,25 sonucunu değiştirmez.
+- Yorum: Replogle-Nadig içindeki 3/3 sonuç, bağımsız bir veri setinde tekrarlanmış bir sinyal değildir; veri setine özgü bir gözlem olarak kalır. Orion sonucu, aynı assay ailesinde bile hücre hattı transferinin otomatik olmadığını gösterir. “Sanal hücre”, görülmemiş perturbasyon, tek hücre dağılımı, doz/zaman, başka assay veya prospektif fayda iddiası kurulamaz.
+- Çıktı: `data/perturbation/processed/orion-unseen-ctx-gate.json`. Kod: `scripts/perturbation/benchmark_orion_transfer.py`, `packages/analysis/analysis/perturbation.py`; 11 birim test. Lisans: CC BY-NC-SA 4.0; ticari kullanım yok.

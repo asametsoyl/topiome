@@ -1,8 +1,8 @@
 # STATUS — Topiome
 
 **Son güncelleme:** 2026-11-07  
-**Aşama:** Görülmemiş bağlam transferi için ön kayıtlı kapı geçti; görülmemiş perturbasyon tahmini gösterilemedi.<br>
-**Ürün durumu:** Dar bir hesaplamalı sinyal var; eğitilmiş Topiome modeli, prospektif doğrulama, laboratuvar ortağı veya alıcı kanıtı yok.
+**Aşama:** Bağımsız X-Atlas/Orion tekrarı başarısız; görülmemiş-bağlam hattı durduruldu. Görülmemiş perturbasyon kontrolü de negatif.<br>
+**Ürün durumu:** Bağımsız olarak doğrulanmış hesaplamalı sinyal yok; eğitilmiş Topiome modeli, prospektif doğrulama, laboratuvar ortağı veya alıcı kanıtı yok.
 
 ## Yapılanlar
 
@@ -18,6 +18,10 @@
 - [x] Görülmemiş bağlam için ön kayıtlı transfer kapısı HepG2/Jurkat/RPE1 fold'larında 3/3 geçti; beta 0,25/0,25/0,30, RMSE iyileşmesi %4,34/%5,84/%4,56, medyan korelasyon 0,357/0,441/0,386. K562 keşifsel fold da geçti.
 - [x] Yeniden kullanılabilir `analysis.perturbation` benchmark modülü, 9 test ve `scripts/perturbation/benchmark_replogle_transfer.py` eklendi; sonuç `data/perturbation/processed/replogle-unseen-ctx-gate.json`.
 - [x] Görülmemiş perturbasyon keşifsel kontrolü yapıldı: ESM2/STRING/DepMap ridge ve kNN, bağlam ortalamasını RMSE+korelasyon+top-50 birlikte geçmedi. Bu veri/görevde model karmaşıklığını artırma durduruldu.
+- [x] X-Atlas/Orion preprocessed array'leri indirildi; `lfc_true.npy` ve `tested.npy` hash'leri doğrulandı. 13.284 satır, 22.182 gen, 2 bağlam, 10.007 perturbasyon; iki bağlamda 3.277 ortak perturbasyon.
+- [x] Orion bağımsız tekrarı için ön kayıt, `lfc_true.npy` indirilmeden ve test metriği hesaplanmadan donduruldu; beta Replogle sonucundan 0,25 olarak sabitlendi, doğrulama seti kullanılmadı.
+- [x] Orion bağımsız tekrarı **başarısız**: sayısal kapı 0/2, sıralama kapısı 1/2. Aday zero'ya göre HCT116→HEK293T'de −%309,70, HEK293T→HCT116'de −%62,46; global mean'den de kötü. Ortak-destek ve üst-çeyrek alt kümelerinde de üstünlük yok. Görülmemiş-bağlam hattı bu veri/görevde durduruldu.
+- [x] `analysis.perturbation` için tek-bağlam doldurma ve ortak-destek skorlama testleri eklendi; analiz test sayısı 11'e çıktı.
 
 ### Site
 
@@ -43,8 +47,10 @@
 5. [x] Sıfır etkisi ve eğitim gen ortalaması baseline'ları eşit validation ölçümünde kıyaslandı.
 6. [x] Replogle-Nadig görülmemiş-bağlam transfer kapısı ön kayıtla çalıştırıldı; 3/3 onaylayıcı fold geçti.
 7. [x] Görülmemiş-perturbasyon keşifsel kontrolü yapıldı; basit özellik modelleri bağlam ortalamasını net geçmedi, hat durduruldu.
-8. [ ] Görülmemiş-bağlam transferini bağımsız ikinci bir veri seti veya assay üzerinde tekrarla; aynı veri içindeki fold'lar bağımsız çalışma sayılmaz.
-9. [ ] Daha güçlü hesaplamalı kapı sonrası deney ortağıyla önceden dondurulmuş tahminlerin prospektif testi.
+8. [x] Görülmemiş-bağlam transferi bağımsız X-Atlas/Orion verisinde ön kayıtla denendi; 0/2 sayısal fold ile başarısız. Hat durduruldu.
+9. [ ] Bağımsız tekrar başarısız olduğu için prospektif doğrulama, yeni bir veri/soru ve ayrı bir ön kayıt olmadan başlatılmayacak.
+
+**Durdurulan hat:** Aynı Orion test setinde beta, metrik veya aday değiştirerek yeniden deneme yapılmayacak. Replogle-Nadig içi 3/3 sonucu bağımsız tekrar olarak sunulmayacak.
 
 ### P1 — Ürün kararı
 
@@ -56,9 +62,9 @@
 
 | Konu | Durum |
 |---|---|
-| İlk hücre bağlamı ve perturbasyon görevi | H1 hESC CRISPRi (Arc VCC) ve Replogle-Nadig dört hücre hattı; görülmemiş bağlam ve görülmemiş perturbasyon ayrı değerlendirilir |
-| Public benchmark verileri | Arc VCC 2025 / PIE aggregate arrays ve PIE Replogle-Nadig essential Perturb-seq; iki kaynağın da lisans/mirror kısıtı kayıtlı |
-| Görülmemiş bağlam transferi | Ön kayıtlı kapı 3/3 onaylayıcı hücre hattında geçti; bu bir Topiome modeli değil, dar ölçekli transfer sinyali |
+| İlk hücre bağlamı ve perturbasyon görevi | H1 hESC CRISPRi (Arc VCC), Replogle-Nadig dört hücre hattı ve X-Atlas/Orion HCT116/HEK293T; görülmemiş bağlam ve görülmemiş perturbasyon ayrı değerlendirilir |
+| Public benchmark verileri | Arc VCC 2025 / PIE aggregate arrays, PIE Replogle-Nadig essential Perturb-seq ve PIE X-Atlas/Orion; lisans/mirror kısıtları kayıtlı |
+| Görülmemiş bağlam transferi | Replogle içi 3/3 geçti; Orion bağımsız tekrarı 0/2 sayısal, 1/2 sıralama ile başarısız; hat durduruldu |
 | Görülmemiş perturbasyon | Keşifsel kontrol negatif; bu veri ve görevde durduruldu |
 | Deney ortağı | Gerekiyor; henüz yok |
 | Topiome marka adı | Şimdilik korunuyor; yasal tescil yok |
@@ -66,12 +72,14 @@
 
 ## Kanıt ve kısıt
 
-- Yeni yönde **eğitilmiş Topiome modeli, prospektif doğrulama, laboratuvar ortağı veya alıcı kanıtı yok**. Ön kayıtlı görülmemiş-bağlam kapısı 3/3 geçti; bu, ölçülmüş etkilerin basit ölçekli transferinin dar bir sinyalidir.
+- Yeni yönde **eğitilmiş Topiome modeli, bağımsız olarak tekrarlanmış transfer sinyali, prospektif doğrulama, laboratuvar ortağı veya alıcı kanıtı yok**. Replogle-Nadig içi ön kayıtlı kapı 3/3 geçti; ancak X-Atlas/Orion bağımsız tekrarı 0/2 sayısal fold ile başarısız oldu.
+- Orion'da aday zero ve global mean'den kötü: HCT116→HEK293T RMSE 0,9789 vs zero 0,2389; HEK293T→HCT116 0,5581 vs zero 0,3436. Ortak-destek ve üst-çeyrek alt kümelerinde de üstünlük yok. Bu, Replogle sonucunun veri setine özgü olabileceğini gösterir.
+- Post-hoc ölçek tanısı (yalnız açıklama): Orion'da bağlamlar arası perturbasyon korelasyonu çoğunlukla zayıf; eğitim global mean'i test bağlamına taşınmıyor; oracle beta 0,046/0,125. Beta=0,25 fazla büyük, ama asıl sorun global mean bileşeni. Bu tanıyla model seçimi yapılmadı.
 - Görülmemiş-perturbasyon keşifsel kontrolü negatif: ESM2/STRING/DepMap ridge ve kNN, bağlam ortalamasını RMSE+korelasyon+top-50 birlikte geçmedi.
-- Bağlam kapısında top-50 mutlak etki sıralaması HepG2 ve RPE1'de global mean'in altında kaldı; “gen sıralamasını iyileştiriyor” iddiası yok. Kapı kuralı top-50'yi yalnız zero'ya göre sınadı.
+- Replogle bağlam kapısında top-50 mutlak etki sıralaması HepG2 ve RPE1'de global mean'in altında kaldı; “gen sıralamasını iyileştiriyor” iddiası yok. Kapı kuralı top-50'yi yalnız zero'ya göre sınadı.
 - Arc VCA'daki toplam hücre sayısı Topiome'un kullanılabilir örnek/perturbasyon sayısı değildir. İlk set aynı hücre hattında 146/44 perturbasyon split'i, aggregate etki tablolarıyla sınırlı.
 - 2026-Nat Methods karşılaştırması genellemenin zor olduğunu, 2026-Nat Biotech çalışması ise bazı metriklerde derin modellerin katkı sağlayabildiğini gösteriyor. Split ve metrik göreve göre belirlenmeli; ölçek tek başına başarı sayılmaz.
-- PIE Replogle-Nadig ve PIE_sources veri kartlarında lisans alanı yok; ticari kullanım doğrulanmadı. Bu koşular yalnız araştırma amaçlıdır.
+- PIE Replogle-Nadig ve PIE_sources veri kartlarında lisans alanı yok; Orion CC BY-NC-SA 4.0. Hiçbiri ticari kullanım için doğrulanmadı; bu koşular yalnız araştırma amaçlıdır.
 - Eski breast GNN ARI 0.260 / Macro-F1 0.446 ve GBM Ivy GAP sonucu yeni yön için kanıt değildir.
 
 ## Oturum kaydı — 2026-11-07
@@ -85,5 +93,9 @@
 - Replogle-Nadig preprocessed array'leri ve PIE canonical split'leri indirildi; split satırları, bağlam izolasyonu ve test perturbasyon kapsaması doğrulandı.
 - Görülmemiş-bağlam transferi ön kaydı test setleri açılmadan sabitlendi; HepG2/Jurkat/RPE1 fold'larında 3/3 geçti. Sonuç `docs/VALIDATION.md` bölüm 11'de.
 - Görülmemiş-perturbasyon keşifsel kontrolü negatif sonuçlandı; `docs/VALIDATION.md` bölüm 12. Bu hat için model karmaşıklığı artırılmayacak.
+- X-Atlas/Orion preprocessed array'leri indirildi; `lfc_true.npy` ve `tested.npy` hash'leri doğrulandı. 13.284 satır, 22.182 gen, 2 bağlam, 10.007 perturbasyon; iki bağlamda 3.277 ortak perturbasyon.
+- Orion ön kaydı `lfc_true.npy` indirilmeden ve test metriği hesaplanmadan donduruldu; beta Replogle sonucundan 0,25 olarak sabitlendi, doğrulama seti kullanılmadı.
+- Orion bağımsız tekrarı 0/2 sayısal fold ile başarısız oldu; aday zero ve global mean'den kötü, ortak-destek ve üst-çeyrek alt kümelerinde de üstünlük yok. Sonuç `docs/VALIDATION.md` bölüm 13'te; hat durduruldu.
+- Orion post-hoc ölçek tanısı yalnız açıklama olarak kaydedildi; beta/metrik değiştirilerek aynı test setinde yeniden deneme yapılmayacak.
 - Landing page yerel tarayıcıda görsel olarak açıldı; API başlatılmadığı için eski giriş gerektiren workspace akışları bu oturumda incelenmedi.
 - İlk baseline oturumunda kod testleri çalıştırılmamıştı; sonraki doğrulamada analiz ve API testleri, ruff, web typecheck, lint ve production build çalıştırıldı.
