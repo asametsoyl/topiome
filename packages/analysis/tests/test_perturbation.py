@@ -9,6 +9,7 @@ import pytest
 from analysis.perturbation import (
     PredictionScore,
     evaluate_gate,
+    filled_perturbation_mean_map,
     load_pie_dataset,
     load_split_rows,
     load_unseen_context_fold,
@@ -204,6 +205,34 @@ def test_paired_bootstrap_detects_consistent_improvement():
 
     assert result["mean_delta"] == pytest.approx(0.5)
     assert result["ci95"][0] > 0
+
+
+def test_filled_perturbation_mean_map_uses_global_for_untested_genes(tmp_path):
+    dataset = _dataset(tmp_path / "data")
+    train = np.array([0, 1])
+    global_mean = masked_gene_mean(dataset, train)
+
+    means = filled_perturbation_mean_map(dataset, train, global_mean)
+
+    # P1 row 0 tests only genes 0 and 2; gene 1 falls back to the global mean.
+    assert means[0].tolist() == pytest.approx([1.0, 4.0, 3.0])
+    # P2 row 1 tests only genes 0 and 1; gene 2 falls back to the global mean.
+    assert means[1].tolist() == pytest.approx([3.0, 4.0, 3.0])
+
+
+def test_score_predictions_support_restricts_to_common_genes(tmp_path):
+    dataset = _dataset(tmp_path / "data")
+    rows = np.array([0])
+    prediction = np.array([[1.0, 2.0, 3.0]])
+    support = np.array([[True, True, False]])
+
+    summary = score_predictions(
+        dataset, rows, prediction, support=support
+    ).summary()
+
+    assert summary["rows"] == 1
+    assert summary["tested_genes"] == 1
+    assert summary["mean_row_rmse"] == pytest.approx(0.0)
 
 
 def test_evaluate_gate_requires_two_passing_folds():

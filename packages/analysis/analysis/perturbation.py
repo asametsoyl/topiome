@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from functools import cached_property
 from pathlib import Path
 from typing import Any
 
@@ -36,7 +37,7 @@ class PieDataset:
     pert_to_id: dict[str, int]
     pert_ensembl: dict[str, str]
 
-    @property
+    @cached_property
     def mask(self) -> np.ndarray:
         """Entries that were tested and have a finite log2 fold-change."""
         return self.tested & np.isfinite(self.lfc)
@@ -184,6 +185,40 @@ def perturbation_mean_map(
     return means
 
 
+def filled_perturbation_mean_map(
+    dataset: PieDataset,
+    train_rows: np.ndarray,
+    global_mean: np.ndarray,
+) -> dict[int, np.ndarray]:
+    """Per-perturbation means with untested genes filled by the global mean.
+
+    This is the single-training-context variant used by the Orion replication.
+    Each perturbation may have only one row in the training context; genes that
+    were not tested in that row carry no perturbation-specific information and
+    must fall back to ``global_mean``. Without this fallback, the centered
+    prediction would silently predict zero for a large fraction of genes.
+    """
+    train_rows = np.asarray(train_rows, dtype=np.int64)
+    train_perturbations = dataset.perturbations[train_rows]
+    global_mean = np.asarray(global_mean, dtype=np.float64)
+    means: dict[int, np.ndarray] = {}
+    for perturbation_id in np.unique(train_perturbations):
+        members = train_rows[train_perturbations == perturbation_id]
+        tested = dataset.tested[members]
+        values = np.asarray(dataset.lfc[members], dtype=np.float64)
+        valid = tested & np.isfinite(values)
+        counts = valid.sum(axis=0)
+        sums = np.where(valid, values, 0.0).sum(axis=0)
+        mean = np.divide(
+            sums,
+            counts,
+            out=np.zeros(sums.shape, dtype=np.float64),
+            where=counts > 0,
+        )
+        means[int(perturbation_id)] = np.where(counts > 0, mean, global_mean)
+    return means
+
+
 def perturbation_mean_predictions(
     dataset: PieDataset,
     target_rows: np.ndarray,
@@ -261,14 +296,27 @@ def score_predictions(
     *,
     top_k: int = 50,
     sign_threshold: float = 0.1,
+    support: np.ndarray | None = None,
 ) -> PredictionScore:
-    """Score predictions row by row over the tested genes of each row."""
+    """Score predictions row by row over the tested genes of each row.
+
+    ``support`` optionally restricts each row to an additional boolean gene
+    mask, for example genes tested in both the training and test rows.
+    """
     rows = np.asarray(rows, dtype=np.int64)
     prediction = np.asarray(prediction, dtype=np.float64)
     if prediction.shape != (rows.size, dataset.lfc.shape[1]):
         raise ValueError(
             f"prediction shape {prediction.shape} != {(rows.size, dataset.lfc.shape[1])}"
         )
+    mask = dataset.mask[rows]
+    if support is not None:
+        support = np.asarray(support, dtype=bool)
+        if support.shape != mask.shape:
+            raise ValueError(
+                f"support shape {support.shape} != score mask shape {mask.shape}"
+            )
+        mask = mask & support
 
     row_mse = np.full(rows.size, np.nan, dtype=np.float64)
     row_genes = np.zeros(rows.size, dtype=np.int64)
@@ -277,7 +325,7 @@ def score_predictions(
     row_sign = np.full(rows.size, np.nan, dtype=np.float64)
 
     for index, row in enumerate(rows):
-        selected = dataset.mask[row]
+        selected = mask[index]
         truth = np.asarray(dataset.lfc[row][selected], dtype=np.float64)
         predicted = prediction[index][selected]
         if truth.size == 0:
