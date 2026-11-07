@@ -4,6 +4,12 @@ Tüm önemli değişiklikler burada. Format: [Keep a Changelog](https://keepacha
 
 ## [Unreleased] — 2026-11-07
 
+### 2026-11-08 — Pilotla kalibre edilmiş bağlam transferi (Tahoe-100M, ön kayıtlı: geçti)
+
+- `analysis.pilot_transfer`: yeni hücre hattında küçük pilot taramadan hedef ortalaması ve ölçek öğrenip taramanın kalanını tahmin eden yöntem; pilot dışı hedef etiketlerine dokunmadığı testle doğrulanıyor.
+- Geliştirme (Replogle, Orion; doğrulayıcı değil) ve ön kayıtlı Tahoe-100M testi. Tahoe'da 50 çiftin %90'ında pilot ortalamasından iyi, medyan RMSE kazancı %2,05; 4 çiftte zarar. Ayrıntı VALIDATION §14.
+- Büyük bellek eşlemeli veri için çift başına tek okuma ve vektörleştirilmiş puanlama (Orion geliştirmesi saatlerden ~28 dakikaya).
+
 ### 2026-11-07 — Ürün yönü araştırma önizlemesine çevrildi
 
 - Topiome adı korunarak araştırma odağı single-cell perturbation-response tahmini fizibilitesine çevrildi; yeni yönde henüz model veya sonuç bulunmadığı sayfada açık.

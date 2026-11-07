@@ -1,8 +1,8 @@
 # STATUS — Topiome
 
-**Son güncelleme:** 2026-11-07  
-**Aşama:** Bağımsız X-Atlas/Orion tekrarı başarısız; görülmemiş-bağlam hattı durduruldu. Görülmemiş perturbasyon kontrolü de negatif.<br>
-**Ürün durumu:** Bağımsız olarak doğrulanmış hesaplamalı sinyal yok; eğitilmiş Topiome modeli, prospektif doğrulama, laboratuvar ortağı veya alıcı kanıtı yok.
+**Son güncelleme:** 2026-11-08  
+**Aşama:** Sıfır atış bağlam transferi Orion'da başarısız; görev pilotla kalibre edilmiş transfere çevrildi ve hiç açılmamış Tahoe-100M'de ön kayıtlı test **geçti** (mütevazı etki). Görülmemiş perturbasyon kontrolü negatif.<br>
+**Ürün durumu:** İlk bağımsız, ön kayıtlı pozitif sonuç: 100 koşulluk pilotla kalibre transfer, pilot ortalamasını 50 hücre hattı çiftinin %90'ında ~%2 RMSE ile geçti. Eğitilmiş derin Topiome modeli, prospektif doğrulama, laboratuvar ortağı veya alıcı kanıtı yok.
 
 ## Yapılanlar
 
@@ -22,6 +22,10 @@
 - [x] Orion bağımsız tekrarı için ön kayıt, `lfc_true.npy` indirilmeden ve test metriği hesaplanmadan donduruldu; beta Replogle sonucundan 0,25 olarak sabitlendi, doğrulama seti kullanılmadı.
 - [x] Orion bağımsız tekrarı **başarısız**: sayısal kapı 0/2, sıralama kapısı 1/2. Aday zero'ya göre HCT116→HEK293T'de −%309,70, HEK293T→HCT116'de −%62,46; global mean'den de kötü. Ortak-destek ve üst-çeyrek alt kümelerinde de üstünlük yok. Görülmemiş-bağlam hattı bu veri/görevde durduruldu.
 - [x] `analysis.perturbation` için tek-bağlam doldurma ve ortak-destek skorlama testleri eklendi; analiz test sayısı 11'e çıktı.
+- [x] Orion başarısızlığının nedeni (kaynak ortalaması taşınmıyor, ölçek bağlama göre değişiyor) pilotla tahmin edilebilir; `analysis.pilot_transfer` yazıldı (sızıntı testi, hızlı puanlayıcı referansla eşleşiyor, çift başına tek okuma).
+- [x] Geliştirme (açılmış veri): Replogle 12/12 çiftte pilot ortalamasını geçti (%4,1–4,4); Orion'da ~%0,1 ek katkı; pilot β Orion oracle β ile uyumlu.
+- [x] Tahoe-100M (50 hücre hattı × 1.137 ilaç-doz) ön kaydı `9a9c118` ile etki değerleri indirilmeden donduruldu; etiketler sonra indirildi, hash'ler doğrulandı.
+- [x] Tahoe ön kayıtlı testi **geçti** (5/5): %90 çift, medyan RMSE kazancı %2,05 [1,24–4,04], korelasyon +0,037, zarar %8. Bileşiği pilotta olmayan koşullarda da aynı (%2,16). Ayrıntı VALIDATION §14.
 
 ### Site
 
@@ -48,9 +52,12 @@
 6. [x] Replogle-Nadig görülmemiş-bağlam transfer kapısı ön kayıtla çalıştırıldı; 3/3 onaylayıcı fold geçti.
 7. [x] Görülmemiş-perturbasyon keşifsel kontrolü yapıldı; basit özellik modelleri bağlam ortalamasını net geçmedi, hat durduruldu.
 8. [x] Görülmemiş-bağlam transferi bağımsız X-Atlas/Orion verisinde ön kayıtla denendi; 0/2 sayısal fold ile başarısız. Hat durduruldu.
-9. [ ] Bağımsız tekrar başarısız olduğu için prospektif doğrulama, yeni bir veri/soru ve ayrı bir ön kayıt olmadan başlatılmayacak.
+9. [x] Yeni soru (pilotla kalibre transfer) ayrı ön kayıtla hiç açılmamış Tahoe-100M'de sınandı ve geçti.
+10. [ ] Zarar gören çiftler (4/50; en kötü −%34,6) için sağlam pilot tahmini (ör. aykırı etkili koşullara dayanıklı ortalama/β): Replogle/Orion/Tahoe'da geliştir, **yeni** bir doğrulayıcı veride ön kayıtla sına.
+11. [ ] Pilot transferini genetik perturbasyonlu bağımsız bir veride tekrarla (Tahoe ilaç taraması; Replogle/Orion açılmış).
+12. [ ] Laboratuvar ortağıyla prospektif test: ortağın yeni hücre hattında pilot ölçülür, kalan tahminler dondurulur, sonra ölçülür.
 
-**Durdurulan hat:** Aynı Orion test setinde beta, metrik veya aday değiştirerek yeniden deneme yapılmayacak. Replogle-Nadig içi 3/3 sonucu bağımsız tekrar olarak sunulmayacak.
+**Durdurulan hat:** Sıfır atış bağlam transferi (Orion'da başarısız). Aynı Orion veya Tahoe test setlerinde yöntem/eşik değiştirerek yeniden deneme yapılmayacak.
 
 ### P1 — Ürün kararı
 
@@ -64,7 +71,7 @@
 |---|---|
 | İlk hücre bağlamı ve perturbasyon görevi | H1 hESC CRISPRi (Arc VCC), Replogle-Nadig dört hücre hattı ve X-Atlas/Orion HCT116/HEK293T; görülmemiş bağlam ve görülmemiş perturbasyon ayrı değerlendirilir |
 | Public benchmark verileri | Arc VCC 2025 / PIE aggregate arrays, PIE Replogle-Nadig essential Perturb-seq ve PIE X-Atlas/Orion; lisans/mirror kısıtları kayıtlı |
-| Görülmemiş bağlam transferi | Replogle içi 3/3 geçti; Orion bağımsız tekrarı 0/2 sayısal, 1/2 sıralama ile başarısız; hat durduruldu |
+| Görülmemiş bağlam transferi | Sıfır atış: Replogle içi 3/3, Orion 0/2 (durduruldu). Pilotla kalibre (k=100): Tahoe ön kayıtlı 5/5 geçti, etki ~%2 |
 | Görülmemiş perturbasyon | Keşifsel kontrol negatif; bu veri ve görevde durduruldu |
 | Deney ortağı | Gerekiyor; henüz yok |
 | Topiome marka adı | Şimdilik korunuyor; yasal tescil yok |
@@ -72,7 +79,8 @@
 
 ## Kanıt ve kısıt
 
-- Yeni yönde **eğitilmiş Topiome modeli, bağımsız olarak tekrarlanmış transfer sinyali, prospektif doğrulama, laboratuvar ortağı veya alıcı kanıtı yok**. Replogle-Nadig içi ön kayıtlı kapı 3/3 geçti; ancak X-Atlas/Orion bağımsız tekrarı 0/2 sayısal fold ile başarısız oldu.
+- **Tahoe-100M (2026-11-08):** pilotla kalibre transfer ön kayıtlı testi geçti; pilot ortalamasına göre medyan %2,05 RMSE, +0,037 korelasyon; top-50 sıralaması iyileşmedi; 4/50 çiftte zarar. Bu sıfır atış iddiası değildir ve pilot ölçümü gerektirir.
+- Yeni yönde **eğitilmiş derin Topiome modeli, prospektif doğrulama, laboratuvar ortağı veya alıcı kanıtı yok**. Replogle-Nadig içi ön kayıtlı kapı 3/3 geçti; ancak X-Atlas/Orion bağımsız tekrarı 0/2 sayısal fold ile başarısız oldu.
 - Orion'da aday zero ve global mean'den kötü: HCT116→HEK293T RMSE 0,9789 vs zero 0,2389; HEK293T→HCT116 0,5581 vs zero 0,3436. Ortak-destek ve üst-çeyrek alt kümelerinde de üstünlük yok. Bu, Replogle sonucunun veri setine özgü olabileceğini gösterir.
 - Post-hoc ölçek tanısı (yalnız açıklama): Orion'da bağlamlar arası perturbasyon korelasyonu çoğunlukla zayıf; eğitim global mean'i test bağlamına taşınmıyor; oracle beta 0,046/0,125. Beta=0,25 fazla büyük, ama asıl sorun global mean bileşeni. Bu tanıyla model seçimi yapılmadı.
 - Görülmemiş-perturbasyon keşifsel kontrolü negatif: ESM2/STRING/DepMap ridge ve kNN, bağlam ortalamasını RMSE+korelasyon+top-50 birlikte geçmedi.
@@ -99,3 +107,11 @@
 - Orion post-hoc ölçek tanısı yalnız açıklama olarak kaydedildi; beta/metrik değiştirilerek aynı test setinde yeniden deneme yapılmayacak.
 - Landing page yerel tarayıcıda görsel olarak açıldı; API başlatılmadığı için eski giriş gerektiren workspace akışları bu oturumda incelenmedi.
 - İlk baseline oturumunda kod testleri çalıştırılmamıştı; sonraki doğrulamada analiz ve API testleri, ruff, web typecheck, lint ve production build çalıştırıldı.
+
+## Oturum kaydı — 2026-11-08
+
+- Orion başarısızlığı incelendi; aynı test setinde ayar yapmak yerine görev gerçekçi bir akışa çevrildi: yeni hücre hattında 100 koşulluk pilot → kalanı tahmin. Adil karşılaştırma "yalnız pilot ortalaması".
+- `analysis.pilot_transfer` + 9 test (sızıntı testi dahil). Geliştirme Replogle ve Orion'da (açılmış veri) yapıldı; ölçeklenmiş transfer seçildi, low-rank ridge elendi.
+- PIE_jiang incelendi ama bağlam başına 1–39 perturbasyon olduğu için pilot kurgusuna uymadı. Tahoe-100M seçildi; ön kayıt `9a9c118` ile etki değerleri indirilmeden donduruldu.
+- Tahoe etiketleri (~9,3 GB) indirildi, hash'ler doğrulandı; kapı değişmemiş kodla bir kez koşuldu: **geçti** (5/5). Zarar gören 4 çift kaydedildi; Tahoe'da ayar yapılmayacak.
+- Doğrulama: analiz testleri ve ruff (yeni dosyalar) geçti. Web/API dokunulmadı; site metinleri bu sonuçla henüz güncellenmedi.

@@ -165,3 +165,32 @@ Her koşuda veri source ID/hash/lisans, perturbasyon tanımı, bağlam, kontrol,
 - Post-hoc ölçek tanısı (yalnız açıklama; yeni model seçimi değil): etiketlerden bağımsız seçilmiş 500 ortak perturbasyonda bağlamlar arası satır korelasyonunun medyanı ~0,021, 90. yüzdelik 0,1395, 99. yüzdelik 0,704. Eğitim/test global mean vektörlerinin RMS'i 1,386/0,806, korelasyonu 0,135. Test üzerinde oracle beta (yalnız tanı) 0,046 (HCT116→HEK293T) ve 0,125 (HEK293T→HCT116). Replogle'da seçilen beta=0,25 Orion için fazla büyük; daha önemlisi, eğitim bağlamının global mean'i test bağlamına taşınmıyor. Bu tanı, ön kayıtlı beta=0,25 sonucunu değiştirmez.
 - Yorum: Replogle-Nadig içindeki 3/3 sonuç, bağımsız bir veri setinde tekrarlanmış bir sinyal değildir; veri setine özgü bir gözlem olarak kalır. Orion sonucu, aynı assay ailesinde bile hücre hattı transferinin otomatik olmadığını gösterir. “Sanal hücre”, görülmemiş perturbasyon, tek hücre dağılımı, doz/zaman, başka assay veya prospektif fayda iddiası kurulamaz.
 - Çıktı: `data/perturbation/processed/orion-unseen-ctx-gate.json`. Kod: `scripts/perturbation/benchmark_orion_transfer.py`, `packages/analysis/analysis/perturbation.py`; 11 birim test. Lisans: CC BY-NC-SA 4.0; ticari kullanım yok.
+
+## 14. Pilot ile kalibre edilmiş bağlam transferi — Tahoe-100M (ön kayıtlı, geçti)
+
+**Durum:** ön kayıtlı doğrulayıcı test **geçti** (5/5 kural). Bu, §13'teki başarısız sıfır atış iddiasını geri getirmez; **farklı bir görev**dir: yeni hücre hattında küçük bir pilot tarama (k=100 koşul) ölçüldüğünde taramanın kalanını tahmin etmek.
+
+- Ön kayıt: `docs/experiments/2026-11-08-tahoe-pilot-transfer-preregistration.md`, commit `9a9c118`. Yöntem, k, 50 çift, seed ve karar kuralı Tahoe etki değerleri indirilmeden donduruldu. Koşu bu commit'teki değişmemiş kodla **bir kez** yapıldı.
+- Geliştirme (doğrulayıcı değil, etiketleri önceden açılmış veri): Replogle-Nadig 12 çiftte `pilot_scaled_transfer` pilot ortalamasını 12/12 geçti (medyan %4,1–4,4); Orion'da ek katkı ~%0,1 (kural 2'yi geçmezdi). Pilotla öğrenilen β Orion'da 0,03–0,13 ve §13'teki oracle β ile uyumlu.
+- Veri: `arcinstitute/PIE_tahoe100m@0d5089a2…`, 50 kanser hücre hattı × 1.137 ilaç-doz koşulu, 18.151 gen; `lfc_true.npy`, `tested.npy`, `ctx_ids.npy`, `pert_ids.npy` SHA-256 değerleri `meta.json` ile eşleşti. Upstream lisans CC0 1.0; PIE aynasında lisans alanı yok.
+- Yöntem: `ŷ = g_t + β·(m_p − g_s)`; `g_t` ve `β` yalnız hedef pilot satırlarından. Karşılaştırma: `pilot_mean` (`g_t`).
+
+| Kural | Sonuç | Eşik | |
+|---|---:|---:|---|
+| 1. Pilot ortalamasını geçen çift oranı | %90 (45/50) | ≥ %70 | geçti |
+| 2. Medyan göreli RMSE kazancı | %2,05 | ≥ %1,0 | geçti |
+| 3. Medyan kazancın %95 bootstrap aralığı | [%1,24, %4,04] | alt > 0 | geçti |
+| 4. Medyan korelasyon kazancı | +0,037 | > 0 | geçti |
+| 5. %1'den fazla zarar gören çift | %8 (4/50) | ≤ %10 | geçti |
+
+Tanımlayıcı (karar dışı):
+
+- Çiftlerin medyanı: zero RMSE 0,683, pilot ortalaması 0,663, transfer 0,662; medyan satır r 0,450 → 0,506; top-50 örtüşmesi 0,249 → 0,246 (sıralama iyileşmesi yok).
+- Transfer, zero'ya göre medyan %8,6 (çiftlerin %82'si), eski sıfır atış adayına göre %34,7 (%100) daha iyi.
+- Bileşiği pilotta hiç bulunmayan test koşullarında (çift başına medyan 858 satır) kazanç aynı: %2,16, çiftlerin %90'ı. Sonuç aynı bileşiğin başka dozlarının pilotta olmasından kaynaklanmıyor.
+- Zarar gören çiftler: CVCL_1098→CVCL_1119 (−%34,6, β 0,61), CVCL_1724→CVCL_1731 (−%10,3), CVCL_1239→CVCL_1285 (−%9,4), CVCL_1666→CVCL_1693 (−%4,3). Bu çiftlerin ikisinde pilot ortalaması bile zero'dan kötü; az sayıda güçlü etkili koşulun 100'lük pilotta ortalamayı ve β'yı saptırdığı düşünülüyor. Sağlam (robust/shrunk) tahmin yeni geliştirme ve yeni bir doğrulayıcı test gerektirir; Tahoe'da ayarlanmayacak.
+- `pilot_lowrank_ridge`: korelasyon daha yüksek (0,578) ama RMSE daha kötü (0,730); birincil kararı etkilemez.
+
+**Yorum:** Bağımsız bir ilaç tarama veri setinde, 100 koşulluk pilotla kalibre edilen transfer, pilotun tek başına verdiğinden **tutarlı ama mütevazı** biçimde daha iyi tahmin üretti (~%2 RMSE, +0,04 korelasyon). Gen sıralaması iyileşmedi. Görülmemiş perturbasyon, sıfır atış, tek hücre dağılımı, doz-yanıt, primer hücre veya klinik fayda iddiası yoktur. Çiftler hücre hatlarını paylaşır; çift düzeyindeki bootstrap bu bağımlılığı tam yansıtmaz.
+
+- Çıktı: `data/perturbation/processed/tahoe-pilot-transfer-gate.json` (yerel). Kod: `scripts/perturbation/benchmark_tahoe_pilot_transfer.py`, `packages/analysis/analysis/pilot_transfer.py`; geliştirme `scripts/perturbation/develop_pilot_transfer.py`.

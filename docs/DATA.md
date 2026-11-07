@@ -42,6 +42,15 @@ Veri hücre başına satırlardan ibaret değildir: gözlem, perturbasyon, kontr
 - 1.857 perturbasyonun sırasıyla 47/22/53'ünde kapsam eksiktir; eksikler eğitim perturbasyon sütun ortalamasıyla doldurulur.
 - Veri kartlarında lisans alanı yok. DepMap zaten perturbasyon yanıtı/essentiality verisi olduğu için olası sızıntı riski taşır. Bu kaynaklar onaylayıcı bağlam kapısına sokulmadı; yalnız `unseen_pert` keşifsel kontrolünde kullanıldı ve ticari kullanım için uygun sayılmaz.
 
+## 2d. Dördüncü veri bileşeni — PIE Tahoe-100M
+
+- Kaynak: `arcinstitute/PIE_tahoe100m`, commit `0d5089a2b4f13239383f135ef8e2db2462a00808`, `preprocessed/` (yalnız `lfc_true.npy`, `tested.npy`, `ctx_ids.npy`, `pert_ids.npy`, `meta.json`, `contexts.yaml`; `fdr`, `fold_changes`, `delta_p` indirilmedi).
+- Özgün çalışma: Zhang et al. 2025, Tahoe-100M; 379 bileşik × 3 doz = 1.137 koşul, 50 kanser hücre hattı, DMSO kontrolü. 56.827 satır, 18.151 gen.
+- SHA-256 (meta.json `array_sha256` ile eşleşti): `lfc_true.npy` `2deab02282e67c812daef3e3836ccd2b11c5eb2deb522f062de1d3ff63cf87ad`, `tested.npy` `b52a8e7934eacab61d7a651e0f09875612df8c6e6f9d6e95c3eeb0021aaf6a81`, `ctx_ids.npy` `d6fe20bb…`, `pert_ids.npy` `39b3dcb0…`.
+- Lisans: upstream `tahoebio/Tahoe-100M` CC0 1.0; PIE aynasının kartında lisans alanı yok. Yalnız araştırma amaçlı kullanıldı.
+- Yerel: `data/perturbation/raw/pie-tahoe100m/preprocessed/` (~9,3 GB, git dışında). Etiket dosyaları ön kayıt commit'i `9a9c118`'den sonra indirildi.
+- Sınır: aggregate log2 fold-change; tek hücre dağılımı ve doz-yanıt eğrisi kullanılmadı; hücre hatları kanser hatlarıdır.
+
 ## 2c. Üçüncü veri bileşeni — PIE X-Atlas/Orion
 
 - Kaynak: [arcinstitute/PIE_x_atlas_orion](https://huggingface.co/datasets/arcinstitute/PIE_x_atlas_orion), commit `abfa3da0f3bb98c9df9c90082386ed0c7c9282d3`, `preprocessed/` array'leri.
