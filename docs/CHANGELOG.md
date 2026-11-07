@@ -14,6 +14,14 @@ Tüm önemli değişiklikler burada. Format: [Keep a Changelog](https://keepacha
 - Arc VCC 2025 / PIE'dan 49.3 MB ön işlenmiş aggregate etki verisi alındı ve kaynak hash'leri doğrulandı; 146/44 unseen-target split'te zero ve gen-ortalaması baseline'ları çalıştırıldı. Ham 15.5 GB hücre matrisi alınmadı.
 - İlk baseline raporu ve tekrarlanabilir runner eklendi; yalnız tek H1 bağlamındaki population-level etkileri değerlendirir, model veya single-cell validation iddiası içermez.
 
+### 2026-11-07 — Replogle-Nadig görülmemiş-bağlam kapısı ve negatif perturbasyon kontrolü
+
+- PIE Replogle-Nadig essential Perturb-seq preprocessed array'leri ve PIE canonical split'leri indirildi; 5.459 satır, 6.642 gen, 4 hücre hattı, 1.857 perturbasyon. Split satırları, bağlam izolasyonu ve test perturbasyon kapsaması doğrulandı.
+- Ön kayıtlı görülmemiş-bağlam transfer kapısı HepG2/Jurkat/RPE1 fold'larında 3/3 geçti; beta 0,25/0,25/0,30, RMSE iyileşmesi %4,34/%5,84/%4,56, medyan korelasyon 0,357/0,441/0,386. Bootstrap aralıkları zero ve global mean'e göre sıfırın üstünde. K562 keşifsel fold da geçti.
+- `analysis.perturbation` benchmark modülü, 9 test ve `scripts/perturbation/benchmark_replogle_transfer.py` eklendi; sonuç `data/perturbation/processed/replogle-unseen-ctx-gate.json`.
+- Görülmemiş-perturbasyon keşifsel kontrolü negatif: ESM2/STRING/DepMap ridge ve kNN, bağlam ortalamasını RMSE+korelasyon+top-50 birlikte geçmedi; bu veri/görevde model karmaşıklığını artırma durduruldu. Çıktı `data/perturbation/processed/replogle-unseen-pert-exploratory.json`.
+- Sınır: basit ölçekli transfer bir Topiome modeli değil; görülmemiş perturbasyon, tek hücre dağılımı, prospektif deney veya ticari kullanım kanıtı yok. PIE/PIE_sources lisans alanları boş; yalnız araştırma.
+
 ### Added
 
 - Wu 2021 GNN hasta split'i için alias dahil sızıntı/eksik katılımcı koruması ve hedefli testler. Zenodo 10.5281/zenodo.18917100 kaydının AnnData + patolog anotasyonu içeren 33 kesit / 32 kişi dış meme kohortu olduğu doğrulandı; lisansı/atıfı boş olduğundan kullanım beklemeye alındı.

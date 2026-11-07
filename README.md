@@ -2,7 +2,7 @@
 
 **Computational research on cellular responses to defined perturbations — Research Use Only.**
 
-Topiome is exploring whether single-cell models can predict responses to genetic interventions in perturbations and biological contexts that were not used during training. The active project has one public aggregate dataset and exploratory baselines; **Topiome has not trained or validated a perturbation-response model.**
+Topiome is exploring whether single-cell models can predict responses to genetic interventions in perturbations and biological contexts that were not used during training. The active project has two public Perturb-seq benchmark sources. A simple scaled-transfer baseline passed a pre-registered unseen-context gate on three cell lines, while the exploratory unseen-perturbation check was negative. **Topiome has not trained or validated a perturbation-response model, and no result has been tested prospectively in a lab.**
 
 The previous spatial-transcriptomics product is retained as legacy code and documented separately. Its results do not support claims about the new research direction.
 

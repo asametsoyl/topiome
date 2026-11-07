@@ -19,7 +19,9 @@ Araştırma sorusu: **Model, eğitimde görmediği bir perturbasyon veya hücre 
 5. Yalnız benchmark'ta katkı gösteren modelleri araştır; belirsizliği ve kapsam dışını raporla.
 6. Sonraki kapıda, bağımsız laboratuvar ölçümüyle önceden belirlenmiş tahminleri test et.
 
-İlk hesaplamalı fizibilite sistemi Arc VCC 2025 H1 hESC CRISPRi Perturb-seq'tir. Bu, bir hastalık modeli değildir; sadece aynı hücre hattında görülmemiş perturbasyon hedeflerine genellenme için dar bir ilk testtir. Hücre bağlamı dış testi için ayrıca uygun veri gerekir.
+İlk hesaplamalı fizibilite sistemi Arc VCC 2025 H1 hESC CRISPRi Perturb-seq'tir. Bu, bir hastalık modeli değildir; yalnız aynı hücre hattında görülmemiş perturbasyon hedeflerine genellenme için dar bir ilk testtir. İkinci benchmark, Replogle-Nadig essential Perturb-seq'in dört hücre hattıdır; görülmemiş bağlam transferi burada sınanır.
+
+Görülmemiş-perturbasyon hattı bu veri ve görevde negatif sonuçlandı; daha zengin veri veya farklı bilimsel soru olmadan model karmaşıklığı artırılmayacak.
 
 ## İlk kullanıcı ve olası değer
 
@@ -27,9 +29,10 @@ Araştırma sorusu: **Model, eğitimde görmediği bir perturbasyon veya hücre 
 
 ## Ürünün kanıt düzeyi
 
-- **Bugün:** ilk public aggregate dataset ve iki basit baseline ile keşifsel fizibilite; dış doğrulama yok.
-- **Henüz yok:** Topiome perturbasyon modeli, doğrulanmış tahmin, deney tasarım önerisi veya ücretli analiz hizmeti.
-- **Gerekli kanıt:** görülmemiş perturbasyon/bağlam testinde baselinelara karşı tekrarlanabilir katkı; ardından bağımsız deneysel test.
+- **Bugün:** iki public Perturb-seq benchmark kaynağı ve basit baselinelar. Görülmemiş-bağlam transferi için ön kayıtlı kapı HepG2/Jurkat/RPE1'de 3/3 geçti; bu, ölçülmüş etkilerin beta≈0,25–0,30 ile taşınmasının dar bir sinyalidir, Topiome modeli değildir. Görülmemiş-perturbasyon keşifsel kontrolü negatiftir.
+- **Henüz yok:** Topiome perturbasyon modeli, görülmemiş perturbasyon tahmini, tek hücre dağılımı, prospektif deney doğrulaması, laboratuvar ortağı, alıcı/ödeme kanıtı veya ücretli analiz hizmeti.
+- **Gerekli kanıt:** görülmemiş-bağlam sinyalinin bağımsız ikinci bir veri setinde veya assay'de tekrarı; ardından önceden dondurulmuş tahminlerin bağımsız laboratuvar ölçümüyle prospektif testi ve alıcı görüşmesi.
+- **Kanıtlanmayan:** gen sıralaması (top-50 HepG2/RPE1'de global mean'in altında), görülmemiş perturbasyon, doz/zaman, başka assay/platform, klinik veya ticari fayda.
 - **RUO:** tanı, prognoz, tedavi seçimi, klinik karar veya kişiye özel müdahale iddiası yok.
 
 ## Dağıtım ve iş modeli

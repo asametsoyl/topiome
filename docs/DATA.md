@@ -26,6 +26,22 @@ Veri hücre başına satırlardan ibaret değildir: gözlem, perturbasyon, kontr
 - Kullanım kapsamı: yalnız aynı H1 bağlamında görülmemiş perturbasyon hedefleri üzerinde aggregate log2 fold-change baseline fizibilitesi. Tek hücre dağılımı, yeni hücre bağlamı veya deney faydası ölçülmedi.
 - İşlenmiş ayna notu: [ArcInstitute/PIE_arc_vcc_25](https://huggingface.co/datasets/arcinstitute/PIE_arc_vcc_25); upstream veri ve challenge tanımı [Arc Virtual Cell Atlas](https://arcinstitute.org/tools/virtualcellatlas) ile [Arc VCC 2025 deposunda](https://github.com/ArcInstitute/arc-virtual-cell-atlas/tree/main/virtual-cell-challenge) yer alır.
 
+## 2b. İkinci veri bileşeni — PIE Replogle-Nadig essential Perturb-seq
+
+- Kaynak: [arcinstitute/PIE_replogle_nadig_essential](https://huggingface.co/datasets/arcinstitute/PIE_replogle_nadig_essential); canonical split'ler [arcinstitute/PIE_splits](https://huggingface.co/datasets/arcinstitute/PIE_splits).
+- Deneyler: Replogle et al. 2022 (K562, RPE1) ve Nadig et al. 2025 (HepG2, Jurkat) CRISPRi essential-gene Perturb-seq ekranları.
+- Yerel subset: `data/perturbation/raw/pie-replogle-nadig-essential/preprocessed/`; `lfc_true.npy`, `tested.npy`, `ctrl_means.npy`, `ctx_ids.npy`, `pert_ids.npy`, `meta.json`, `contexts.yaml`; yaklaşık 327 MB. 5.459 (bağlam, perturbasyon) satırı, 6.642 gen, 4 hücre hattı, 1.857 perturbasyon.
+- Split'ler: `data/perturbation/raw/pie-splits/`; 36 JSON dosyası ve bir README (4 fold × 3 setting × 3 part). `unseen_ctx` bir hücre hattını tümüyle dışarıda tutar, `unseen_pert` perturbasyonları dışarıda tutar, `unseen_ctx_pert` ikisini birlikte test eder. Kullanılan fold'larda split satırları, bağlam izolasyonu ve test perturbasyon kapsaması doğrulandı.
+- Lisans: Hugging Face veri kartında lisans alanı yok. Orijinal çalışmalar kamuya açık, ancak türev setin ticari kullanım koşulları doğrulanmadı. Kaynak/hash kaydı: `data/perturbation/raw/pie-replogle-nadig-essential/preprocessed/manifest.json`. Yalnız araştırma amaçlıdır; ticari iddia veya ürün eğitimi için kullanılmaz.
+- Kullanım: `unseen_ctx` ön kayıtlı transfer kapısı (onaylayıcı fold'lar HepG2/Jurkat/RPE1, keşifsel K562); `unseen_pert` keşifsel negatif kontrol. Ayrıntı `docs/VALIDATION.md` bölüm 11–12.
+- Sınır: aggregate log2 fold-change; tek hücre dağılımı, doz/zaman, perturbasyon verimliliği ve bağımsız biyolojik tekrar yok. Dört hücre hattı da aynı assay ailesindedir; başka platform/assay dış testi değildir.
+
+### 2b.1 PIE knowledge sources — yalnız keşifsel
+
+- `arcinstitute/PIE_sources` ESM2 (1.280 boyut), STRING (512) ve DepMap (1.186) embedding'leri `data/perturbation/raw/pie-sources/` altında tutulur.
+- 1.857 perturbasyonun sırasıyla 47/22/53'ünde kapsam eksiktir; eksikler eğitim perturbasyon sütun ortalamasıyla doldurulur.
+- Veri kartlarında lisans alanı yok. DepMap zaten perturbasyon yanıtı/essentiality verisi olduğu için olası sızıntı riski taşır. Bu kaynaklar onaylayıcı bağlam kapısına sokulmadı; yalnız `unseen_pert` keşifsel kontrolünde kullanıldı ve ticari kullanım için uygun sayılmaz.
+
 ## 3. Kaynak havuzu ve sonraki adaylar
 
 **Arc Virtual Cell Atlas** açık tek hücre ve perturbasyon koleksiyonları sağlıyor: <https://arcinstitute.org/tools/virtualcellatlas>. Arc sayfası VCC 2025 ile Tahoe-100M verilerini CC0 olarak listeliyor; her bileşen için kayıt, README, alıntı ve lisans ayrı doğrulanmalı. Tüm koleksiyon MVP için indirilmeyecek. Önce küçük ve değerlendirilebilir tek bir görev seçilecek.

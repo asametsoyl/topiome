@@ -1,6 +1,6 @@
 # Doğrulama — perturbasyon yanıtı araştırması
 
-**Durum (2026-11-07):** ilk keşifsel aggregate baseline çalışması yapıldı. Topiome perturbasyon tahmin modeli ve bağımsız doğrulama yok; başarı iddiası yok.
+**Durum (2026-11-07):** ön kayıtlı görülmemiş-bağlam transfer kapısı üç onaylayıcı hücre hattında geçti. Bu, ölçülmüş perturbasyon etkilerinin basit ölçeklemeyle yeni bir hücre hattına taşınabildiğini gösteren dar bir hesaplamalı sinyaldir; Topiome'un eğitilmiş/doğrulanmış modeli, görülmemiş-perturbasyon sonucu veya prospektif doğrulaması yoktur. Görülmemiş-perturbasyon keşifsel kontrolü negatiftir.
 
 ## 1. Test edilecek bilimsel iddia
 
@@ -102,3 +102,41 @@ Her koşuda veri source ID/hash/lisans, perturbasyon tanımı, bağlam, kontrol,
 - Ortalama gen etkisi hedef kimliğine özgü değil. Sonuç ortak gen/assay örüntüsünün yararlı olabileceğini düşündürür; model katkısı, biyolojik mekanizma, deney faydası veya diğer bağlamlara genelleme kanıtı değildir.
 - Çıktı: `data/perturbation/processed/vcc-pie-baseline-metrics.json`; tekrarlanabilir komut: `python scripts/perturbation/benchmark_vcc_pie_baselines.py`.
 - Sınırlar: hücre düzeyinde çıktı tahmin edilmedi; tek hücre dağılımı veya yeni hücre bağlamı test edilmedi; 44 public validation perturbasyonu bağımsız deney/çalışma değildir. Bu sonuç ürün doğruluğu iddiası için kullanılmaz.
+
+## 11. Ön kayıtlı görülmemiş bağlam transferi — Replogle-Nadig
+
+**Durum:** ön kayıtlı kapı 3/3 onaylayıcı fold'da geçti. Bu bir Topiome modeli değil, ölçülmüş perturbasyon etkilerinin basit ölçekli transferidir.
+
+- Ön kayıt: `docs/experiments/2026-11-07-replogle-unseen-context-preregistration.md`; test setleri açılmadan önce sabitlendi. K562, ön kayıttan önce keşifsel sinyal kontrolünde kullanıldığı için onaylayıcı kapıya dahil edilmedi.
+- Veri: `arcinstitute/PIE_replogle_nadig_essential` preprocessed array'leri; 5.459 (bağlam, perturbasyon) satırı, 6.642 gen, 4 hücre hattı, 1.857 perturbasyon. Replogle et al. 2022 (K562, RPE1) ve Nadig et al. 2025 (HepG2, Jurkat) CRISPRi essential-gene Perturb-seq ekranları.
+- Split: `arcinstitute/PIE_splits`, `replogle_wdataset/unseen_ctx/<fold>/{train,val,test}.json`. Her fold'da eğitim diğer üç hücre hattı, test tamamen dışarıda tutulan hücre hattı. Test hücre hattı eğitimde/doğrulamada yok; satır örtüşmesi yok. Test perturbasyonları eğitimde görülmüş (kapsama 1.0).
+- Aday: `beta × (perturbasyon ortalaması − global ortalama)`; beta [0, 1] aralığında 0,05 adımlı ızgaradan yalnız doğrulama satırlarında seçildi. Baseline'lar: zero, global mean, ölçeksiz perturbasyon ortalaması ve merkezlenmiş perturbasyon ortalaması.
+- Onaylayıcı fold'lar: HepG2, Jurkat, RPE1. Kapı kuralı: en az 2/3 fold'da ≥%3 göreli satır-RMSE iyileşmesi, bootstrap %95 aralığının tamamı sıfırın üstünde, medyan satır korelasyonu >0,20, top-50 örtüşmesinde zero'ya göre +0,02, global mean'den kötü olmama ve beta>0.
+
+| Fold | beta | zero RMSE | aday RMSE | göreli iyileşme | medyan r | top-50 Δ (zero) | bootstrap zero farkı %95 | bootstrap global farkı %95 | kapı |
+|---|---:|---:|---:|---:|---:|---:|---|---|---|
+| HepG2 | 0,25 | 0,7579 | 0,7250 | %4,34 | 0,357 | +0,0796 | 0,0305–0,0354 | 0,0152–0,0213 | geçti |
+| Jurkat | 0,25 | 0,5643 | 0,5313 | %5,84 | 0,441 | +0,0645 | 0,0304–0,0354 | 0,0571–0,0629 | geçti |
+| RPE1 | 0,30 | 0,8724 | 0,8326 | %4,56 | 0,386 | +0,0780 | 0,0375–0,0419 | 0,0173–0,0226 | geçti |
+| K562 (keşifsel) | 0,25 | 0,4854 | 0,4590 | %5,43 | 0,427 | +0,0604 | 0,0228–0,0299 | 0,0568–0,0640 | keşifsel geçti |
+
+- Bootstrap birimi bağlam–perturbasyon satırıdır; aralıklar paired bootstrap ile 2.000 yeniden örneklemeden elde edildi. Aday, üç onaylayıcı foldda da hem zero hem global mean'e göre RMSE'de daha iyi.
+- **Önemli sınır:** top-50 mutlak etki örtüşmesi HepG2 ve RPE1'de global mean'in altında kaldı (HepG2 0,0858 vs 0,0957; RPE1 0,0878 vs 0,1117). Kaydedilen kapı top-50'yi yalnız zero'ya göre sınadığı için kapı geçti; ancak “gen sıralamasını iyileştiriyor” iddiası kurulamaz. Jurkat'ta global mean çok zayıf olduğu için aday daha iyi görünüyor.
+- Beta'nın 0,25–0,30 olması, ham perturbasyon etkilerinin yeni bağlama taşınırken güçlü büzülmeye ihtiyaç duyduğunu gösterir. Ölçek seçilmezse ham transfer RMSE'de zero'nun gerisinde kalıyor.
+- Post-hoc ölçeksiz (uncentered) varyant 3/4 foldda RMSE'de biraz daha iyiydi (ör. HepG2 0,7139 vs 0,7250); kayıtlı aday olmadığı için kapı sonucu sayılmaz ve model seçiminde kullanılmaz.
+- Bu sonuç görülmemiş perturbasyon, tek hücre dağılımı, doz/zaman, başka assay veya prospektif deney hakkında kanıt değildir. Veri kartında lisans alanı yok; ticari kullanım doğrulanmamıştır ve bu koşu yalnız araştırma amaçlıdır.
+- Çıktı: `data/perturbation/processed/replogle-unseen-ctx-gate.json`. Kod: `packages/analysis/analysis/perturbation.py`, `scripts/perturbation/benchmark_replogle_transfer.py`; 9 birim test.
+
+## 12. Keşifsel görülmemiş perturbasyon kontrolü — negatif
+
+**Durum:** bu bir ön kayıtlı kapı değildir; keşifsel kontrol negatif sonuçlandı. Bu veri ve görevle model karmaşıklığını artırma durduruldu.
+
+- Split: PIE `unseen_pert`, K562 fold adı; test perturbasyonları eğitimde yok, test satırları HepG2/Jurkat/RPE1'de. Eğitim ve doğrulama aynı üç hattan; doğrulama perturbasyonları eğitimde görülmüş olduğu için hiperparametre seçimi sınırlıdır.
+- Özellikler: PIE_sources ESM2 (1.280 boyut), STRING (512), DepMap (1.186); 1.857 perturbasyonun sırasıyla 47/22/53'ünde eksik. Eksikler eğitim perturbasyon sütun ortalamasıyla dolduruldu ve eğitim perturbasyonlarında standardize edildi.
+- Modeller: mesafe ağırlıklı kNN (k=5, 10, 25, 50, 100) ve ridge (alpha 0,01–10.000; birleşik ve tek blok). Seçim yalnız doğrulama satırlarında yapıldı.
+- Baseline'lar (test): zero RMSE 0,7170, global mean 0,7118, bağlam ortalaması 0,7066; medyan korelasyon 0 / 0,120 / 0,170; top-50 0,0079 / 0,0802 / 0,1097.
+- Doğrulama-seçimli birincil aday: DepMap ridge alpha=1000; test RMSE 0,7051 (bağlam ortalamasına göre +%0,21), medyan korelasyon 0,1367 (baseline 0,1704), top-50 0,0911 (baseline 0,1097), bootstrap farkı %95 [−0,0015, +0,0047] (sıfırı içeriyor).
+- Diğer doğrulama-seçimli adaylar: STRING ridge alpha=10.000 test RMSE 0,7017 (+%0,69), korelasyon 0,1502, top-50 0,0968; kNN k=100 test RMSE 0,7020 (+%0,65), korelasyon 0,1487, top-50 0,1018. İkisinde de bootstrap aralığı sıfırın üstünde, ancak sıralama metrikleri bağlam ortalamasının altında.
+- Test RMSE'sine göre en iyi görünen DepMap alpha=10.000 (0,6966, +%1,42) doğrulama tarafından seçilmedi; test setine bakarak model seçmek sızıntı olur ve bu sonuç kullanılmaz.
+- Sonuç: hiçbir basit özellik modeli bağlam ortalamasını RMSE, korelasyon ve top-50 birlikte geçmedi. DepMap zaten perturbasyon yanıtı/essentiality verisi olduğu için olası sızıntı riski taşır; buna rağmen net üstünlük yok. Görülmemiş-perturbasyon hattı bu veri ve görevde durduruldu; daha zengin veri veya farklı bilimsel soru olmadan karmaşık model denenmeyecek.
+- Çıktı: `data/perturbation/processed/replogle-unseen-pert-exploratory.json`. Script: `scripts/perturbation/explore_replogle_unseen_pert.py`. PIE_sources kartlarında lisans alanı yok; yalnız araştırma amaçlıdır.
