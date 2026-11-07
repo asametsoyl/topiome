@@ -1,5 +1,7 @@
 # Spatial transcriptomics rakip analizi
 
+> **Legacy / kapsam dışı (2026-11-07):** Bu belge arşivlenmiş spatial-transkriptomik ürününe aittir. Topiome'un güncel perturbasyon-yanıtı araştırma yönünün rakip analizi değildir; perturbasyon/sanal hücre oyuncuları için ayrı ve kaynaklı bir analiz henüz tamamlanmamıştır. Güncel bilimsel kanıt durumu için `docs/VALIDATION.md` ve `docs/PRODUCT.md` okunmalıdır.
+
 **Tarih:** 2026-11-06  
 **Kapsam:** Topiome'un ilk odağı olan araştırma amaçlı kanser spatial-transcriptomics analizini, ürünlerin herkese açık resmî sayfalarına göre karşılaştırır. Bu, ürünleri kurup aynı veri üzerinde çalıştıran bağımsız performans benchmark'ı değildir. Ürün sayfalarındaki yetenekler üretici beyanıdır; bilimsel üstünlük kanıtı sayılmaz.
 
