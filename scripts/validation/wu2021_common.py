@@ -35,11 +35,32 @@ VISIUM_PATIENTS = TRAIN_PATIENTS + TEST_PATIENTS
 SCRNA_ALIASES = {"CID4290": ["CID4290A"]}
 
 
+def validate_patient_split(
+    train: list[str] | tuple[str, ...],
+    test: list[str] | tuple[str, ...],
+    available: list[str] | tuple[str, ...],
+) -> None:
+    """Fail closed if patients or scRNA aliases cross the held-out boundary."""
+    if len(set(train)) != len(train) or len(set(test)) != len(test):
+        raise ValueError("Patient split contains duplicate IDs")
+    if set(train) & set(test):
+        raise ValueError("Patient-level train/test split overlaps")
+    if set(train) | set(test) != set(available):
+        raise ValueError(
+            "Patient split must cover exactly the available Visium patients"
+        )
+    if scrna_ids(tuple(train)) & scrna_ids(tuple(test)):
+        raise ValueError("scRNA patient aliases cross the train/test boundary")
+
+
 def scrna_ids(patients: list[str] | tuple[str, ...]) -> set[str]:
     ids = set(patients)
     for patient in patients:
         ids.update(SCRNA_ALIASES.get(patient, []))
     return ids
+
+
+validate_patient_split(TRAIN_PATIENTS, TEST_PATIENTS, VISIUM_PATIENTS)
 
 # ── scRNA cell types → breast pack cell-type ids ─────────────────────────────
 # Cancer epithelium stays generic (subtype calls in the atlas are inferred);
@@ -111,7 +132,9 @@ def label_array(barcodes: list[str], labels: pd.Series) -> np.ndarray:
     """Integer class per spot (−1 when unlabelled or ignored)."""
     index = {name: i for i, name in enumerate(CLASSES)}
     aligned = labels.reindex(barcodes)
-    return np.array([index.get(v, -1) if isinstance(v, str) else -1 for v in aligned], dtype=int)
+    return np.array(
+        [index.get(v, -1) if isinstance(v, str) else -1 for v in aligned], dtype=int
+    )
 
 
 def reference_from_sums(
@@ -157,5 +180,9 @@ def marker_panel(
         lfc = np.log2((means.loc[cell_type] * 1e4 + 0.1) / (others * 1e4 + 0.1))
         ok = detection.loc[cell_type] >= min_detection
         ranked = lfc[ok].sort_values(ascending=False)
-        panel.extend(g for g in ranked.index[:per_type] if not g.upper().startswith(("MT-", "RPL", "RPS")))
+        panel.extend(
+            g
+            for g in ranked.index[:per_type]
+            if not g.upper().startswith(("MT-", "RPL", "RPS"))
+        )
     return list(dict.fromkeys(g.upper() for g in panel))

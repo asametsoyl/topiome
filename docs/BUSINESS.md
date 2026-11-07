@@ -1,5 +1,7 @@
 # İş Modeli ve Şirketleşme — Topiome
 
+> **Eski varsayımlar (2026-11-07):** Aşağıdaki abonelik, fiyat ve gelir hedefleri spatial ürün için yazılmıştır; yeni araştırma yönünde iş modeli henüz belirlenmedi. Bilimsel fizibilite ve kullanıcı ihtiyacı görülmeden bu varsayımlar kullanılmamalıdır.
+
 > Hukuki/mali tavsiye değildir. Kuruluş öncesi mali müşavir ve avukatla görüşülmelidir.
 
 ## 1. Şirket yapısı (öneri)

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useMemo } from "react";
+import { Suspense, useMemo, useState } from "react";
 import {
   ArrowLeftRight,
   ArrowUpRight,
@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/app/page-header";
 import { NotAssessedNotice } from "@/components/app/run-insights";
+import { SpatialMap } from "@/components/spatial/spatial-map";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
@@ -27,6 +28,7 @@ import type {
   InteractionCompare,
   InteractionSide,
   RunComparison,
+  ResultPayload,
 } from "@/lib/types";
 import { cn, formatDateTime, formatNumber, formatPercent, titleCase } from "@/lib/utils";
 import { useApiData } from "@/lib/use-api";
@@ -62,6 +64,8 @@ function RunSideCard({ side }: { side: CompareRunSide }) {
     ["Disease pack", `${side.pack_name} · ${side.pack_version}`],
     ["Pipeline", side.pipeline_version],
     ["Spots modeled", `${formatNumber(side.modeled_spots)} of ${formatNumber(side.n_spots)}`],
+    ["Assay · species", `${titleCase(side.platform)} · ${titleCase(side.species)}`],
+    ["Recorded condition", titleCase(side.condition)],
     ["Domains · cell types", `${side.n_domains} · ${side.n_cell_types}`],
     [
       "Method agreement",
@@ -346,9 +350,31 @@ function CommunicationCard({ rows }: { rows: InteractionCompare[] }) {
 }
 
 function ComparisonView({ data }: { data: RunComparison }) {
+  const [sharedGene, setSharedGene] = useState("");
+  const [sharedGeneInput, setSharedGeneInput] = useState("");
+  const [geneScaleA, setGeneScaleA] = useState(0.1);
+  const [geneScaleB, setGeneScaleB] = useState(0.1);
+  const [geneThreshold, setGeneThreshold] = useState(0);
+  const sharedGeneScaleMax = Math.max(geneScaleA, geneScaleB, 0.1);
+  function changeSharedGene(gene: string) {
+    if (gene.trim().toUpperCase() === sharedGene.trim().toUpperCase()) return;
+    setSharedGeneInput(gene);
+    setSharedGene(gene);
+    setGeneScaleA(0.1);
+    setGeneScaleB(0.1);
+    setGeneThreshold(0);
+  }
   const notAssessed = useMemo(
     () => Array.from(new Set([...data.a.not_assessed, ...data.b.not_assessed])),
     [data],
+  );
+  const { data: resultA } = useApiData<{ run_id: string; payload: ResultPayload } | null>(
+    () => apiClient.results(data.a.run_id),
+    [data.a.run_id],
+  );
+  const { data: resultB } = useApiData<{ run_id: string; payload: ResultPayload } | null>(
+    () => apiClient.results(data.b.run_id),
+    [data.b.run_id],
   );
 
   return (
@@ -380,6 +406,19 @@ function ComparisonView({ data }: { data: RunComparison }) {
       </div>
 
       <CommunicationCard rows={data.communication} />
+
+      {resultA && resultB ? (
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-sm font-medium text-bone">Spatial maps</h2>
+            <p className="mt-1 text-[11px] text-slate">Load a gene in either map to show it in both samples on one shared log1p(CP10K) colour scale. This is a descriptive visual comparison; no cross-sample significance test is applied.</p>
+          </div>
+          <div className="grid min-w-0 gap-4 2xl:grid-cols-2">
+            <div className="min-w-0 space-y-2"><p className="font-mono text-[10px] text-teal">A · {data.a.sample_name ?? data.a.run_id.slice(0, 8)}</p><SpatialMap payload={resultA.payload} runId={data.a.run_id} imageUrl={`/api/v1/samples/${data.a.sample_id}/spatial-image`} sharedGene={sharedGene} sharedGeneInput={sharedGeneInput} onSharedGeneInputChange={setSharedGeneInput} sharedGeneScaleMax={sharedGeneScaleMax} onSharedGeneChange={changeSharedGene} onGeneScaleMax={setGeneScaleA} sharedGeneThreshold={geneThreshold} onSharedGeneThresholdChange={setGeneThreshold} /></div>
+            <div className="min-w-0 space-y-2"><p className="font-mono text-[10px] text-acid">B · {data.b.sample_name ?? data.b.run_id.slice(0, 8)}</p><SpatialMap payload={resultB.payload} runId={data.b.run_id} imageUrl={`/api/v1/samples/${data.b.sample_id}/spatial-image`} sharedGene={sharedGene} sharedGeneInput={sharedGeneInput} onSharedGeneInputChange={setSharedGeneInput} sharedGeneScaleMax={sharedGeneScaleMax} onSharedGeneChange={changeSharedGene} onGeneScaleMax={setGeneScaleB} sharedGeneThreshold={geneThreshold} onSharedGeneThresholdChange={setGeneThreshold} /></div>
+          </div>
+        </section>
+      ) : null}
 
       <NotAssessedNotice items={notAssessed} />
 

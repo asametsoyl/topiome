@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, Request, status
@@ -9,8 +10,8 @@ from sqlalchemy.orm import Session
 
 from .config import settings
 from .db import get_db
-from .models import AuditLog, Membership, Organization, User
-from .security import decode_session_token
+from .models import ApiKey, AuditLog, Membership, Organization, User
+from .security import decode_session_token, hash_api_key
 
 DbSession = Annotated[Session, Depends(get_db)]
 
@@ -20,13 +21,18 @@ class AuthContext:
     user: User
     org: Organization
     membership: Membership
+    role_override: str | None = None
+    auth_method: str = "session"
 
     @property
     def role(self) -> str:
-        return self.membership.role
+        return self.role_override or self.membership.role
 
 
 def _token_from_request(request: Request) -> str | None:
+    api_key = request.headers.get("X-API-Key")
+    if api_key:
+        return api_key.strip()
     token = request.cookies.get(settings.session_cookie_name)
     if token:
         return token
@@ -37,14 +43,54 @@ def _token_from_request(request: Request) -> str | None:
 
 
 def get_auth_context(request: Request, db: DbSession) -> AuthContext:
-    token = _token_from_request(request)
-    if not token:
+    raw_token = _token_from_request(request)
+    if not raw_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Cookie"},
         )
-    payload = decode_session_token(token)
+
+    if raw_token.startswith("topiome_live_"):
+        key_hash = hash_api_key(raw_token)
+        api_key = db.scalar(
+            select(ApiKey).where(ApiKey.key_hash == key_hash, ApiKey.revoked_at.is_(None))
+        )
+        if not api_key:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or revoked API key",
+            )
+        api_key.last_used_at = datetime.now(UTC)
+        db.commit()
+
+        user = db.get(User, api_key.user_id)
+        org = db.get(Organization, api_key.org_id)
+        if not user or not user.is_active or not org:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="API key owner or organization inactive",
+            )
+        membership = db.scalar(
+            select(Membership).where(
+                Membership.user_id == user.id, Membership.org_id == org.id
+            )
+        )
+        if not membership:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="No organization membership"
+            )
+        # API keys are limited to analyst capabilities; account admin actions
+        # must use the owner's interactive session.
+        return AuthContext(
+            user=user,
+            org=org,
+            membership=membership,
+            role_override="analyst",
+            auth_method="api_key",
+        )
+
+    payload = decode_session_token(raw_token)
     if not payload or not payload.get("sub"):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session")
 

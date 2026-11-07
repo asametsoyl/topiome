@@ -3,22 +3,21 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth";
-import { useToast } from "@/lib/toast";
 import { errorMessage } from "@/lib/utils";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { me, loading, login, demoLogin } = useAuth();
-  const { toast } = useToast();
+  const { me, loading, login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [totpCode, setTotpCode] = useState("");
+  const [requiresMfa, setRequiresMfa] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [demoSubmitting, setDemoSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -30,31 +29,24 @@ export default function LoginPage() {
     setSubmitting(true);
     setError(null);
     try {
-      await login(email.trim(), password);
+      await login(email.trim(), password, totpCode || undefined);
       router.push("/app");
     } catch (err) {
-      setError(errorMessage(err));
+      const message = errorMessage(err);
+      if (message.toLowerCase().includes("mfa code required")) {
+        setRequiresMfa(true);
+        setError("Enter the code from your authenticator app, or use a recovery code.");
+      } else {
+        setError(message);
+      }
       setSubmitting(false);
-    }
-  }
-
-  async function handleDemo() {
-    setDemoSubmitting(true);
-    setError(null);
-    try {
-      await demoLogin();
-      toast("Demo workspace ready. Exploring synthetic breast data.", "success");
-      router.push("/app");
-    } catch (err) {
-      setError(errorMessage(err));
-      setDemoSubmitting(false);
     }
   }
 
   return (
     <AuthShell
-      title="Welcome back."
-      subtitle="Sign in to your research workspace to continue an analysis."
+      title="Legacy workspace."
+      subtitle="Sign in to view archived spatial-transcriptomics projects and analyses. The new perturbation-response research product is not available yet."
       footer={
         <>
           New to Topiome?{" "}
@@ -85,6 +77,18 @@ export default function LoginPage() {
             placeholder="••••••••••"
           />
         </Field>
+        {requiresMfa ? (
+          <Field label="Authenticator or recovery code">
+            <Input
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              required
+              value={totpCode}
+              onChange={(event) => setTotpCode(event.target.value)}
+              placeholder="123456"
+            />
+          </Field>
+        ) : null}
 
         {error ? (
           <p className="rounded-lg border border-coral/30 bg-coral/[0.06] px-3 py-2 text-xs text-coral">
@@ -98,28 +102,6 @@ export default function LoginPage() {
         </Button>
       </form>
 
-      <div className="my-5 flex items-center gap-3">
-        <span className="h-px flex-1 bg-line" />
-        <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-slate">or</span>
-        <span className="h-px flex-1 bg-line" />
-      </div>
-
-      <Button
-        type="button"
-        variant="secondary"
-        className="w-full"
-        onClick={handleDemo}
-        loading={demoSubmitting}
-      >
-        {!demoSubmitting ? <Sparkles className="size-4 text-acid" /> : null}
-        Explore the demo workspace
-      </Button>
-
-      <p className="mt-4 text-center text-[11px] leading-relaxed text-slate">
-        Demo credentials:{" "}
-        <span className="font-mono text-bone-dim">demo@topiome.com</span> /{" "}
-        <span className="font-mono text-bone-dim">demo1234</span>
-      </p>
     </AuthShell>
   );
 }

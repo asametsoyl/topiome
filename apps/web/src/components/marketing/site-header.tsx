@@ -7,13 +7,11 @@ import { Menu, X } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { RuoNotice } from "@/components/ui/ruo-notice";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/lib/auth";
 
 const links = [
-  { href: "/#product", label: "Product" },
-  { href: "/#packs", label: "Disease packs" },
-  { href: "/#validation", label: "Validation" },
-  { href: "/pricing", label: "Pricing" },
+  { href: "/#research", label: "Research" },
+  { href: "/#method", label: "Validation" },
+  { href: "/#status", label: "Status" },
   { href: "/docs", label: "Docs" },
 ];
 
@@ -21,7 +19,6 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
-  const { me } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -73,29 +70,12 @@ export function SiteHeader() {
           </nav>
 
           <div className="hidden items-center gap-2 sm:flex">
-            {me ? (
-              <Link
-                href="/app"
-                className="inline-flex h-9 items-center rounded-xl bg-acid px-4 text-xs font-medium text-ink transition hover:bg-[#d6ff6a]"
-              >
-                Open workspace
-              </Link>
-            ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="inline-flex h-9 items-center rounded-xl px-3 text-xs text-bone-dim transition hover:bg-bone/5 hover:text-bone"
-                >
-                  Sign in
-                </Link>
-                <Link
-                  href="/register"
-                  className="inline-flex h-9 items-center rounded-xl bg-acid px-4 text-xs font-medium text-ink transition hover:bg-[#d6ff6a]"
-                >
-                  Start free
-                </Link>
-              </>
-            )}
+            <Link
+              href="/#status"
+              className="inline-flex h-9 items-center rounded-xl bg-teal px-4 text-xs font-medium text-white transition hover:bg-[#125f50]"
+            >
+              Research preview
+            </Link>
           </div>
 
           <button
@@ -124,16 +104,10 @@ export function SiteHeader() {
             </nav>
             <div className="mt-3 flex gap-2 border-t border-line pt-3">
               <Link
-                href={me ? "/app" : "/login"}
-                className="flex h-10 flex-1 items-center justify-center rounded-xl border border-line text-xs text-bone"
+                href="/#status"
+                className="flex h-10 flex-1 items-center justify-center rounded-xl bg-teal text-xs font-medium text-white"
               >
-                {me ? "Open workspace" : "Sign in"}
-              </Link>
-              <Link
-                href="/register"
-                className="flex h-10 flex-1 items-center justify-center rounded-xl bg-acid text-xs font-medium text-ink"
-              >
-                Start free
+                Research preview
               </Link>
             </div>
           </div>

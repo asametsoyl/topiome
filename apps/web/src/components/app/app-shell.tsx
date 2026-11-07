@@ -247,6 +247,17 @@ export function AppShell({ children }: { children: ReactNode }) {
         </header>
 
         <main className="mx-auto w-full max-w-[1280px] px-5 py-7 md:px-8 md:py-9">
+          <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-amber/25 bg-white px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-amber">Legacy spatial workspace</p>
+              <p className="mt-1 max-w-3xl text-[11px] leading-5 text-bone-dim">
+                This workspace runs the archived spatial-transcriptomics pipeline. It is separate from Topiome's new perturbation-response research direction, which has no validated model yet.
+              </p>
+            </div>
+            <Link href="/#status" className="inline-flex shrink-0 items-center gap-1.5 text-[10px] font-medium text-teal hover:text-[#125f50]">
+              New research direction <ChevronDown className="size-3 -rotate-90" />
+            </Link>
+          </div>
           {children}
         </main>
       </div>

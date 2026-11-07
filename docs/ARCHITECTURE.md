@@ -1,5 +1,7 @@
 # Mimari — Topiome
 
+> **Legacy belgesi (2026-11-07):** Aşağıdaki mimari mevcut spatial-transkriptomik ürününü anlatır; yeni perturbasyon yanıtı araştırma yönü için geçerli sistem mimarisi değildir. Yeni veri akışı/model henüz uygulanmadı. Güncel plan: `PRODUCT.md`, `VALIDATION.md`, `DATA.md`.
+
 ## 1. Genel bakış
 
 ```

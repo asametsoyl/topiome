@@ -1,19 +1,19 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #07100c;
-  --color-ink-2: #0b1510;
-  --color-ink-3: #101d16;
-  --color-ink-4: #16261d;
-  --color-bone: #f3f0e8;
-  --color-bone-dim: #c9c6bc;
-  --color-acid: #c8f751;
-  --color-teal: #5fe0c0;
-  --color-amber: #ffb86b;
-  --color-coral: #ff6b6b;
-  --color-slate: #8a938c;
-  --color-line: #23312a;
-  --color-line-soft: #18241d;
+  --color-ink: #f5f7f5;
+  --color-ink-2: #ffffff;
+  --color-ink-3: #edf1ee;
+  --color-ink-4: #e4eae5;
+  --color-bone: #17231c;
+  --color-bone-dim: #46564c;
+  --color-acid: #587b2a;
+  --color-teal: #167663;
+  --color-amber: #9a5d16;
+  --color-coral: #b44343;
+  --color-slate: #65736a;
+  --color-line: #dce4de;
+  --color-line-soft: #e8ede9;
 
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
@@ -76,12 +76,12 @@
     background: var(--color-ink);
   }
   ::-webkit-scrollbar-thumb {
-    background: #24342b;
+    background: #c4cec7;
     border-radius: 99px;
     border: 2px solid var(--color-ink);
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #33483b;
+    background: #9eada2;
   }
 }
 
@@ -131,20 +131,20 @@
       transform 0.2s ease;
   }
   .card-hover:hover {
-    border-color: #3a4d41;
+      border-color: #bdcbc1;
     background: var(--color-ink-3);
   }
 
   .grid-bg {
     background-image:
-      linear-gradient(to right, rgba(200, 247, 81, 0.05) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(200, 247, 81, 0.05) 1px, transparent 1px);
+      linear-gradient(to right, rgba(22, 118, 99, 0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(22, 118, 99, 0.045) 1px, transparent 1px);
     background-size: 48px 48px;
     mask-image: radial-gradient(ellipse at 50% 0%, black 0%, transparent 72%);
   }
 
   .spot-grid {
-    background-image: radial-gradient(circle at 1px 1px, rgba(95, 224, 192, 0.18) 1px, transparent 0);
+    background-image: radial-gradient(circle at 1px 1px, rgba(22, 118, 99, 0.16) 1px, transparent 0);
     background-size: 18px 18px;
   }
 
@@ -156,7 +156,7 @@
     outline: none;
   }
   .focus-ring:focus-visible {
-    outline: 2px solid var(--color-acid);
+    outline: 2px solid var(--color-teal);
     outline-offset: 2px;
   }
 }

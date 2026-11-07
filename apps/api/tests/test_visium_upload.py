@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import io
 import json
 import tarfile
@@ -11,6 +12,7 @@ import numpy as np
 from conftest import register
 
 from app.disease_packs import get_pack
+from app.routers.samples import _has_visium_files
 
 
 def _space_ranger_files(pack_id: str = "breast", n_spots: int = 160) -> tuple[bytes, bytes]:
@@ -44,12 +46,29 @@ def _space_ranger_files(pack_id: str = "breast", n_spots: int = 160) -> tuple[by
     with tarfile.open(fileobj=spatial, mode="w:gz") as archive:
         for name, payload in (
             ("spatial/tissue_positions_list.csv", positions),
-            ("spatial/scalefactors_json.json", b'{"spot_diameter_fullres": 89.4}'),
+            (
+                "spatial/scalefactors_json.json",
+                b'{"spot_diameter_fullres": 89.4, "tissue_hires_scalef": 0.15}',
+            ),
+            (
+                "spatial/tissue_hires_image.png",
+                base64.b64decode(
+                    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aSZsAAAAASUVORK5CYII="
+                ),
+            ),
         ):
             info = tarfile.TarInfo(name)
             info.size = len(payload)
             archive.addfile(info, io.BytesIO(payload))
     return h5.getvalue(), spatial.getvalue()
+
+
+def test_upload_validation_accepts_visium_hd_parquet_positions():
+    valid, missing = _has_visium_files(
+        ["filtered_feature_bc_matrix.h5", "tissue_positions.parquet"]
+    )
+    assert valid is True
+    assert missing == []
 
 
 def test_uploaded_visium_sample_runs_end_to_end(client):
@@ -68,6 +87,12 @@ def test_uploaded_visium_sample_runs_end_to_end(client):
     )
     assert sample.status_code == 201, sample.text
     assert sample.json()["status"] == "uploaded"
+
+    tissue = client.get(f"/api/v1/samples/{sample.json()['id']}/spatial-image")
+    assert tissue.status_code == 200, tissue.text
+    assert tissue.headers["content-type"] == "image/png"
+    assert tissue.headers["x-visium-hires-scale"] == "0.15"
+    assert tissue.content.startswith(b"\x89PNG\r\n\x1a\n")
 
     run = client.post(
         f"/api/v1/samples/{sample.json()['id']}/runs", json={"params": {"lr_permutations": 9}}
@@ -100,6 +125,26 @@ def test_uploaded_visium_sample_runs_end_to_end(client):
     assert "genes were measured" in domain_model["reason"]
     assert payload["summary"]["domain_method"] == "kmeans_markers"
     assert domain_model["test_metrics"]["gnn"]["pooled"]["macro_f1"] > 0
+
+    expression = client.get(f"/api/v1/runs/{run['id']}/expression", params={"gene": "BG0"})
+    assert expression.status_code == 200, expression.text
+    assert expression.json()["gene"] == "BG0"
+    assert expression.json()["scale"] == "log1p(CP10K)"
+    assert len(expression.json()["values"]) == 160
+
+    qc_barcodes = [spot["barcode"] for spot in payload["spots"] if spot["qc_pass"]]
+    assert len(qc_barcodes) >= 20
+    roi = client.post(
+        f"/api/v1/runs/{run['id']}/roi-genes", json={"barcodes": qc_barcodes[:10]}
+    )
+    assert roi.status_code == 200, roi.text
+    roi_data = roi.json()
+    assert roi_data["n_roi_qc_pass"] == 10
+    assert roi_data["n_background_qc_pass"] == len(qc_barcodes) - 10
+    assert roi_data["method"] == "descriptive_mean_difference"
+    assert roi_data["genes"]
+    assert all("p_value" not in item for item in roi_data["genes"])
+    assert "no inferential test" in roi_data["note"]
 
 
 def test_incomplete_archive_fails_the_run_with_a_clear_message(client):

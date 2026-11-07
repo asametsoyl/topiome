@@ -46,20 +46,22 @@ class VisiumFiles:
     positions: Path | None = None
     scalefactors: Path | None = None
     image: Path | None = None
+    platform: str = "visium"
+    bin_size_um: int | None = None
 
     def missing(self) -> list[str]:
         problems = []
         if self.h5 is None and not (self.matrix and self.barcodes and self.features):
-            problems.append("count matrix (filtered_feature_bc_matrix.h5 or matrix.mtx + barcodes + features)")
+            problems.append(
+                "count matrix (filtered_feature_bc_matrix.h5 or matrix.mtx + barcodes + features)"
+            )
         if self.positions is None:
-            problems.append("tissue_positions.csv")
+            problems.append("tissue_positions.csv or tissue_positions.parquet")
         return problems
 
 
 def _files(root: Path) -> list[Path]:
-    return sorted(
-        p for p in root.rglob("*") if p.is_file() and not p.name.startswith(("._", "."))
-    )
+    return sorted(p for p in root.rglob("*") if p.is_file() and not p.name.startswith(("._", ".")))
 
 
 def _prefer(paths: list[Path], *good: str, bad: tuple[str, ...] = ("raw",)) -> Path | None:
@@ -85,29 +87,93 @@ def discover_visium(root: str | Path) -> VisiumFiles:
     names = [(p, p.name.lower()) for p in files]
 
     found = VisiumFiles()
-    found.h5 = _prefer(
-        [p for p, n in names if n.endswith(".h5") and "matrix" in n], "filtered"
-    )
+    hd_bins = ["square_016um", "square_008um", "square_002um"]
+    hd_h5 = [
+        p
+        for p, n in names
+        if n.endswith(".h5") and "matrix" in n and any(b in str(p).lower() for b in hd_bins)
+    ]
+    if hd_h5:
+        # The current analysis uses dense spots × genes tables downstream. Select
+        # the coarsest native HD bin; 2/8 µm bins are too large for this pipeline.
+        found.h5 = _prefer([p for p in hd_h5 if "square_016um" in str(p).lower()], "filtered")
+        if found.h5 is None:
+            raise ValueError(
+                "Visium HD 2 µm/8 µm bins are not supported yet. Include the "
+                "Space Ranger binned_outputs/square_016um output."
+            )
+        found.platform = "visium_hd"
+        found.bin_size_um = 16
+        positions = [
+            p
+            for p, n in names
+            if "tissue_positions" in n
+            and n.endswith(".parquet")
+            and "square_016um" in str(p).lower()
+        ]
+        found.positions = _prefer(positions, "tissue_positions.parquet")
+        # HD bins use parquet coordinates and do not need the Visium microscope image.
+    else:
+        found.h5 = _prefer([p for p, n in names if n.endswith(".h5") and "matrix" in n], "filtered")
     matrices = [p for p, n in names if n.endswith(("matrix.mtx", "matrix.mtx.gz"))]
     found.matrix = _prefer(matrices, "filtered")
     if found.matrix is not None:
-        siblings = [(p, p.name.lower()) for p in found.matrix.parent.iterdir() if p.is_file()]
-        found.barcodes = next(
-            (p for p, n in siblings if "barcodes" in n and n.endswith((".tsv", ".tsv.gz"))), None
+        siblings = [
+            (p, p.name.lower())
+            for p in found.matrix.parent.iterdir()
+            if p.is_file() and not p.name.startswith(("._", "."))
+        ]
+
+        def sidecar(candidates: list[Path]) -> Path | None:
+            local = [path for path, _ in siblings if path in candidates]
+            if local:
+                return sorted(local)[0]
+            # GEO can store a single shared barcode/features table beside its
+            # per-sample folders. Use it only when unambiguous.
+            return candidates[0] if len(candidates) == 1 else None
+
+        shared = (
+            [p for p in base.parent.iterdir() if p.is_file() and not p.name.startswith(("._", "."))]
+            if base.parent != base
+            else []
         )
-        found.features = next(
-            (
+        available = names + [(p, p.name.lower()) for p in shared if p not in {x for x, _ in names}]
+        found.barcodes = sidecar(
+            [p for p, n in available if "barcodes" in n and n.endswith((".tsv", ".tsv.gz"))]
+        )
+        found.features = sidecar(
+            [
                 p
-                for p, n in siblings
+                for p, n in available
                 if ("features" in n or "genes" in n) and n.endswith((".tsv", ".tsv.gz"))
-            ),
-            None,
+            ]
         )
-    positions = [p for p, n in names if "tissue_positions" in n and n.endswith(".csv")]
-    found.positions = _prefer(positions, "tissue_positions.csv", bad=("list",))
-    found.scalefactors = next((p for p, n in names if n.endswith("scalefactors_json.json")), None)
+    if found.platform == "visium":
+        positions = [
+            p for p, n in names if "tissue_positions" in n and n.endswith((".csv", ".csv.gz"))
+        ]
+        found.positions = _prefer(positions, "tissue_positions.csv", bad=("list",))
+    found.scalefactors = next(
+        (
+            p
+            for p, n in names
+            if n.endswith(("scalefactors_json.json", "scalefactors_json.json.gz"))
+        ),
+        None,
+    )
     found.image = _prefer(
-        [p for p, n in names if n.endswith(("tissue_hires_image.png", "tissue_lowres_image.png"))],
+        [
+            p
+            for p, n in names
+            if n.endswith(
+                (
+                    "tissue_hires_image.png",
+                    "tissue_hires_image.png.gz",
+                    "tissue_lowres_image.png",
+                    "tissue_lowres_image.png.gz",
+                )
+            )
+        ],
         "hires",
     )
     return found
@@ -136,7 +202,9 @@ def _read_lines(path: Path) -> list[list[str]]:
         return [line.rstrip("\n").split("\t") for line in fh if line.strip()]
 
 
-def read_10x_mtx(matrix: Path, barcodes: Path, features: Path) -> tuple[sp.csr_matrix, list[str], list[str]]:
+def read_10x_mtx(
+    matrix: Path, barcodes: Path, features: Path
+) -> tuple[sp.csr_matrix, list[str], list[str]]:
     """Return (spots × genes CSR counts, barcodes, gene symbols)."""
     with _open_binary(matrix) as fh:
         counts = sp.csr_matrix(scipy.io.mmread(fh))
@@ -189,7 +257,15 @@ def read_10x_h5(path: Path) -> tuple[sp.csr_matrix, list[str], list[str]]:
 
 def read_positions(path: Path) -> pd.DataFrame:
     """Tissue positions indexed by barcode (handles headered and legacy files)."""
-    positions = pd.read_csv(path)
+    if path.suffix.lower() == ".parquet":
+        try:
+            positions = pd.read_parquet(path)
+        except ImportError as exc:
+            raise ValueError(
+                "Reading Visium HD Parquet positions requires the pyarrow package"
+            ) from exc
+    else:
+        positions = pd.read_csv(path)
     positions.columns = [str(c).strip() for c in positions.columns]
     if "barcode" not in positions.columns:
         positions = pd.read_csv(path, header=None)
@@ -249,6 +325,7 @@ def load_visium(
     *,
     keep_genes: set[str] | None = None,
     max_genes: int = 5000,
+    max_spots: int = 12_000,
 ) -> SpatialDataset:
     """Load a 10x Visium sample from a Space Ranger output folder (or any folder
     containing its files). Only in-tissue spots are kept."""
@@ -257,14 +334,22 @@ def load_visium(
     if missing:
         raise ValueError(f"Missing Visium files: {', '.join(missing)}")
 
+    # Preflight the tissue count before materialising a potentially large HD
+    # matrix. HD Parquet coordinates are much smaller than the expression matrix.
+    positions = read_positions(files.positions)
+    if "in_tissue" in positions.columns:
+        positions = positions[pd.to_numeric(positions["in_tissue"], errors="coerce") == 1]
+    if len(positions) > max_spots:
+        raise ValueError(
+            f"This sample has at least {len(positions):,} in-tissue positions; the current "
+            f"in-memory analysis limit is {max_spots:,}. Use a tissue crop or smaller sample. "
+            "Visium HD is read from the 16 µm bin; tiled analysis for larger samples is not available yet."
+        )
+
     if files.h5 is not None:
         counts, barcodes, genes = read_10x_h5(files.h5)
     else:
         counts, barcodes, genes = read_10x_mtx(files.matrix, files.barcodes, files.features)
-
-    positions = read_positions(files.positions)
-    if "in_tissue" in positions.columns:
-        positions = positions[pd.to_numeric(positions["in_tissue"], errors="coerce") == 1]
 
     position_index = pd.Index(positions.index)
     barcode_index = pd.Index(barcodes)
@@ -273,6 +358,12 @@ def load_visium(
     if len(rows) < 50:
         raise ValueError(
             f"Only {len(rows)} in-tissue barcodes match the count matrix (need at least 50)"
+        )
+    if len(rows) > max_spots:
+        raise ValueError(
+            f"This sample has {len(rows):,} in-tissue spots; the current in-memory analysis "
+            f"limit is {max_spots:,}. Use a tissue crop or smaller sample. Visium HD is read "
+            "from the 16 µm bin; tiled analysis for larger samples is not available yet."
         )
     kept_barcodes = [barcodes[i] for i in rows]
     counts = counts[rows]
@@ -301,7 +392,8 @@ def load_visium(
     scalefactors = {}
     if files.scalefactors is not None:
         try:
-            scalefactors = json.loads(files.scalefactors.read_text())
+            with _open_text(files.scalefactors) as handle:
+                scalefactors = json.load(handle)
         except (OSError, ValueError):
             scalefactors = {}
 
@@ -311,7 +403,8 @@ def load_visium(
         coordinates=coords,
         expression=expression,
         metadata={
-            "platform": "visium",
+            "platform": files.platform,
+            "bin_size_um": files.bin_size_um,
             "source": str(Path(directory)),
             "matrix_format": "h5" if files.h5 is not None else "mtx",
             "genes_total": int(qc_stats["n_genes_total"]),

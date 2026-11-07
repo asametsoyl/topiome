@@ -65,6 +65,13 @@ const evidenceTone = {
   exploratory: "outline",
 } as const;
 
+function formatCommit(commit: string): string {
+  if (commit === "unversioned") return commit;
+  const dirty = commit.endsWith("-dirty");
+  const hash = dirty ? commit.slice(0, -"-dirty".length) : commit;
+  return `${hash.slice(0, 12)}${dirty ? " · dirty tree" : ""}`;
+}
+
 export default function RunDetailPage() {
   const params = useParams<{ id: string }>();
   const runId = params.id;
@@ -333,13 +340,13 @@ export default function RunDetailPage() {
             <Stat
               label="Domains"
               value={formatNumber(summary.n_domains)}
-              hint={`${summary.n_cell_types} cell types`}
+              hint={`${summary.n_cell_types} ${summary.method === "marker_score" ? "marker groups" : "cell types"}`}
               tone="teal"
             />
             <Stat
-              label="Top cell type"
+              label="Dominant modeled class"
               value={titleCase(summary.dominant_cell_type ?? "—")}
-              hint="Mean composition across spots"
+              hint="Pack-level class; finer subtypes may be unresolved"
             />
             <Stat
               label="Runtime"
@@ -367,7 +374,11 @@ export default function RunDetailPage() {
           {payload ? (
             <div className="grid gap-5 xl:grid-cols-[1.7fr_1fr]">
               <div className="min-w-0">
-                <SpatialMap payload={payload} />
+                <SpatialMap
+                  payload={payload}
+                  runId={run.id}
+                  imageUrl={`/api/v1/samples/${run.sample_id}/spatial-image`}
+                />
               </div>
 
               <div className="space-y-5">
@@ -390,7 +401,7 @@ export default function RunDetailPage() {
                         ? [
                             ["Reference", run.provenance.reference.version],
                             ["Pack sha256", run.provenance.disease_pack.sha256.slice(0, 12)],
-                            ["Commit", run.provenance.software.commit.slice(0, 12)],
+                            ["Commit", formatCommit(run.provenance.software.commit)],
                           ]
                         : []),
                     ].map(([key, value]) => (
@@ -555,6 +566,7 @@ export default function RunDetailPage() {
 }
 
 function DomainsTable({ payload }: { payload: ResultPayload }) {
+  const usesMarkerScores = payload.summary.method === "marker_score";
   return (
     <Card className="overflow-hidden">
       <CardHeader
@@ -570,7 +582,7 @@ function DomainsTable({ payload }: { payload: ResultPayload }) {
               <th className="px-4 py-2.5 font-normal">Spots</th>
               <th className="px-4 py-2.5 font-normal">Share</th>
               <th className="px-4 py-2.5 font-normal">Mean uncertainty</th>
-              <th className="px-4 py-2.5 font-normal">Top cell types</th>
+              <th className="px-4 py-2.5 font-normal">{usesMarkerScores ? "Top marker groups" : "Top cell types"}</th>
             </tr>
           </thead>
           <tbody>
@@ -627,12 +639,15 @@ function CompositionView({
   composition: Array<[string, number]>;
   summary: RunDetail["summary"];
 }) {
+  const usesMarkerScores = summary?.method === "marker_score";
   return (
     <div className="grid gap-5 lg:grid-cols-[1.3fr_1fr]">
       <Card>
         <CardHeader
-          title="Mean cell composition"
-          description="Average NNLS fractions across modeled spots."
+          title={usesMarkerScores ? "Mean marker scores" : "Mean cell composition"}
+          description={usesMarkerScores
+            ? "Normalized pack-marker scores across modeled spots; these are not cell fractions."
+            : "Average NNLS fractions across modeled spots."}
         />
         <CardBody className="space-y-3">
           {composition.map(([cellType, value]) => (
@@ -657,8 +672,9 @@ function CompositionView({
           <CardHeader title="Interpretation" description="What these fractions mean — and do not." />
           <CardBody className="space-y-3 text-[11px] leading-relaxed text-slate">
             <p>
-              Fractions estimate the share of each reference cell type in a spot under an
-              equal-RNA-content assumption. They are not counts of cells.
+              {usesMarkerScores
+                ? "Marker scores summarize similarity to the disease pack's marker groups. They are not calibrated cell fractions, cell counts, or single-cell labels."
+                : "Fractions estimate the share of each reference cell type in a spot under an equal-RNA-content assumption. They are not counts of cells."}
             </p>
             <p>
               Composition is constrained to the cell types in this disease pack. Cell states or
@@ -674,7 +690,7 @@ function CompositionView({
             <CardHeader title="Coverage" />
             <CardBody className="space-y-2">
               {[
-                ["Cell types modeled", formatNumber(summary.n_cell_types)],
+                [usesMarkerScores ? "Marker groups modeled" : "Cell types modeled", formatNumber(summary.n_cell_types)],
                 ["Spots modeled", formatNumber(summary.modeled_spots)],
                 ["Dominant type", titleCase(summary.dominant_cell_type ?? "—")],
               ].map(([key, value]) => (
@@ -777,13 +793,14 @@ function TargetTable({ payload }: { payload: ResultPayload }) {
 }
 
 function ValidationView({ payload }: { payload: ResultPayload }) {
-  const metrics = payload.metrics;
+  const metrics = payload.metrics && Object.keys(payload.metrics).length > 0 ? payload.metrics : null;
+  const isSynthetic = payload.summary.synthetic;
   return (
     <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
       <Card>
         <CardHeader
           title="Benchmark result"
-          description="Synthetic ground truth for this run."
+          description={isSynthetic ? "Synthetic ground truth for this run." : "Independent ground truth is required to calculate benchmark metrics."}
           action={<Badge variant={metrics ? "teal" : "outline"}>{metrics ? "Reported" : "None"}</Badge>}
         />
         <CardBody className="space-y-3">
@@ -844,7 +861,7 @@ function ValidationView({ payload }: { payload: ResultPayload }) {
             <EmptyState
               compact
               title="No benchmark available"
-              description="This run has no ground truth, so composition and domain metrics cannot be computed."
+              description={isSynthetic ? "This run has no usable synthetic ground truth, so benchmark metrics cannot be computed." : "No pathology annotations or independent composition labels were supplied; this real sample cannot be scored for accuracy."}
             />
           )}
         </CardBody>
@@ -857,11 +874,15 @@ function ValidationView({ payload }: { payload: ResultPayload }) {
           <CardBody className="space-y-2.5 text-[11px] leading-relaxed text-slate">
             <p className="flex items-start gap-2">
               <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-teal" />
-              The estimator recovers known composition and zones from synthetic pseudospots.
+              {isSynthetic
+                ? "The estimator recovers known composition and zones from synthetic pseudospots."
+                : "This run confirms the pipeline processed the uploaded assay; it does not establish cell-type or domain accuracy."}
             </p>
             <p className="flex items-start gap-2">
               <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-teal" />
-              The pipeline is reproducible with pinned versions and parameters.
+              {isSynthetic
+                ? "The pipeline is reproducible with pinned versions and parameters."
+                : "Pinned versions and parameters make this exploratory result traceable and reproducible."}
             </p>
           </CardBody>
         </Card>

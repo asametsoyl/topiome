@@ -63,8 +63,18 @@ API, `APP_ENV=production` iken şu durumlarda **açılmayı reddeder** (`Setting
 - `DATABASE_URL` SQLite,
 - `ALLOW_DEMO_LOGIN=true`,
 - `QUEUE_MODE` geçersiz.
+- `STORAGE_BACKEND=s3` iken `S3_BUCKET` boş.
+- Rate limit backend ayarı `memory` veya `redis` değil.
+- Stripe secret girilmiş ama webhook secret eksik.
 
-Giriş denemeleri sınırlıdır: aynı IP + e-posta için 15 dakikada 10, IP başına 50 başarısız deneme (`429` + `Retry-After`). Sınır süreç başınadır; ters proxy'de de oran sınırı önerilir.
+Giriş denemeleri, kayıt ve yüklemeler sınırlıdır (`429` + `Retry-After`). Bellek backend'i süreç başınadır; birden çok API worker'ında ortak limit için ayrı ve erişilebilir Redis'i `RATE_LIMIT_BACKEND=redis` ile yapılandırın. Redis devre dışıysa sistem bellek sayacına düşer. Proxy'de ayrıca oran sınırı önerilir.
+
+## İsteğe bağlı servis ayarları
+
+- S3 uyumlu depolama için `STORAGE_BACKEND=s3`, bucket ve kimlik bilgilerini ayarlayın. Ham girdi yüklemeleri S3'e aktarılır; analiz worker'ı gerekli örnek dosyalarını yerel önbelleğe alır. Dosya indirme bağlantıları süreli imzalı URL olur.
+- SMTP ayarları davet ve run tamamlandı/başarısız e-postalarını açar. SMTP ayarı yoksa davet akışı yine oluşur ve link yönetici ekranında gösterilir.
+- Stripe için secret, webhook signing secret ve iki plan price ID gerekir. Webhook endpoint'i `/api/v1/billing/webhook` olarak ayarlanır. Canlı kullanımdan önce Stripe test modunda uçtan uca doğrulayın.
+- Run tekrarları geçici pipeline hatalarında `RUN_MAX_ATTEMPTS` kadar toplam deneme yapar. Artan bekleme süresi `RETRY_BASE_SECONDS` ile başlar.
 
 ## Run kuyruğu
 

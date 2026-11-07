@@ -23,6 +23,78 @@ class RegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+    totp_code: str | None = Field(default=None, max_length=32)
+
+
+class InvitationCreate(BaseModel):
+    email: EmailStr
+    role: str = Field(default="analyst", pattern="^(admin|analyst|viewer)$")
+
+
+class InvitationOut(BaseModel):
+    id: str
+    email: EmailStr
+    role: str
+    expires_at: datetime
+    accepted_at: datetime | None
+    created_at: datetime
+    accept_url: str | None = None
+
+
+class AcceptInvitationRequest(BaseModel):
+    token: str = Field(min_length=20, max_length=200)
+    name: str | None = Field(default=None, min_length=2, max_length=120)
+    password: str | None = Field(default=None, min_length=10, max_length=128)
+    totp_code: str | None = Field(default=None, min_length=6, max_length=32)
+
+
+class ApiKeyCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=120)
+
+
+class ApiKeyOut(BaseModel):
+    id: str
+    name: str
+    prefix: str
+    last_used_at: datetime | None
+    revoked_at: datetime | None
+    created_at: datetime
+
+
+class ApiKeyCreated(ApiKeyOut):
+    key: str
+
+
+class MfaSetupOut(BaseModel):
+    secret: str
+    otpauth_url: str
+    qr_svg: str | None = None
+
+
+class MfaEnableRequest(BaseModel):
+    code: str = Field(min_length=6, max_length=32)
+
+
+class MfaEnableOut(BaseModel):
+    enabled: bool
+    recovery_codes: list[str]
+
+
+class MfaDisableRequest(BaseModel):
+    password: str
+    code: str = Field(min_length=6, max_length=32)
+
+
+class BillingCheckoutRequest(BaseModel):
+    plan: str = Field(pattern="^(lab|institution)$")
+
+
+class BillingStatusOut(BaseModel):
+    plan: str
+    subscription_status: str
+    renewal_at: datetime | None
+    billing_configured: bool
+    usage: dict[str, Any]
 
 
 class UserOut(ORMModel):
@@ -30,6 +102,7 @@ class UserOut(ORMModel):
     email: EmailStr
     name: str
     created_at: datetime
+    mfa_enabled: bool = Field(default=False, validation_alias="totp_enabled")
 
 
 class OrgOut(ORMModel):
@@ -172,6 +245,9 @@ class CompareRunSide(BaseModel):
     run_id: str
     sample_id: str
     sample_name: str | None
+    platform: str
+    species: str
+    condition: str
     project_id: str
     disease_pack: str
     pack_name: str

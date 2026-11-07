@@ -70,6 +70,7 @@ def score_ligand_receptor(
     domains: np.ndarray,
     pairs: list[dict[str, Any]],
     *,
+    barcodes: list[str] | None = None,
     k: int = 6,
     n_permutations: int = 199,
     seed: int = 42,
@@ -124,6 +125,7 @@ def score_ligand_receptor(
         sender = p_sender * ligand_expr
         receiver = p_receiver * receptor_expr
         observed = _score(sender, receiver, graph)
+        spot_contribution = sender * (receiver + graph @ receiver)
 
         exceed = 0
         for perm in permutations:
@@ -149,6 +151,14 @@ def score_ligand_receptor(
                 "p_value": round(p_value, 6),
                 "ligand_detected_fraction": round(float((ligand_expr > 0).mean()), 4),
                 "receptor_detected_fraction": round(float((receptor_expr > 0).mean()), 4),
+                "spot_scores": {
+                    barcode: round(float(value), 8)
+                    for barcode, value in zip(
+                        barcodes or [str(index) for index in range(n)],
+                        spot_contribution,
+                        strict=True,
+                    )
+                },
                 "by_domain": by_domain,
                 "top_domain": max(by_domain, key=by_domain.get) if by_domain else None,
             }

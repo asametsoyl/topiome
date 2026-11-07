@@ -97,7 +97,7 @@ export function AuthShell({
 
         <div className="border-t border-line px-6 py-4">
           <p className="text-center text-[10px] leading-relaxed text-slate">
-            Protected by organization-level isolation and audit logging. Demo data is synthetic.
+            Protected by organization-level isolation and audit logging. Research use only.
           </p>
         </div>
       </main>

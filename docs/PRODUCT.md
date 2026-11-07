@@ -1,89 +1,45 @@
-# Ürün — Topiome
+# Ürün yönü — Topiome
 
-## 1. Vizyon
+**Son karar:** Topiome adı korunuyor. Ürün yönü, tek hücre ölçümlerinden tanımlı genetik perturbasyonlara verilen hücresel yanıtları araştırma amaçlı tahmin etme ve aday deneyleri önceliklendirme olarak değiştirildi.
 
-Her araştırmacının, bir dokunun **hücre kompozisyonunu, mekânsal organizasyonunu ve hastalık bölgelerini** tek bir haritada görebilmesini sağlamak.
+Bu bir ürün iddiası değil, sınanacak araştırma programıdır. Şu an Topiome'un bu alanda eğitilmiş veya doğrulanmış modeli yoktur.
 
-Topiome, spatial transcriptomics'i "pahalı ve karmaşık bir veri seti" olmaktan çıkarıp, **tekrarlanabilir, karşılaştırılabilir ve raporlanabilir bir doku haritası**na dönüştürür.
+## Bilimsel amaç
 
-## 2. Problem
+Bir başlangıç hücre bağlamı ve tanımlı müdahale verildiğinde, ölçülen hücresel yanıtı tahmin etmek; tahminin hangi perturbasyonlarda ve bağlamlarda desteklendiğini, hangi alanlarda verinin dışına çıktığını göstermek.
 
-- Spatial transcriptomics verisi büyük, gürültülü ve çok formatlı.
-- Dekonvolüsyon ve spatial domain modelleri çoğu laboratuvarda tekrar üretilemiyor; doğruluk ve belirsizlik raporlanmıyor.
-- Sonuçlar görselleştirilse bile yorum, QC ve raporlama manuel.
-- Hastalığa özgü marker/bölge tanımları dağınık; ekipler her projede sıfırdan başlıyor.
-- Ticari araçlar ya çok pahalı kurumsal platformlar ya da parçalı script'ler.
+Araştırma sorusu: **Model, eğitimde görmediği bir perturbasyon veya hücre bağlamındaki yanıtı basit yöntemlerden daha iyi tahmin edebiliyor mu?**
 
-## 3. Çözüm
+## Dar ilk kapsam
 
-**Topiome = hastalıktan bağımsız analiz çekirdeği + hastalık paketleri + işbirliğine açık raporlama.**
+1. Lisans ve metadatası kaydedilmiş açık Perturb-seq / CRISPR-perturbation verisini seç.
+2. Kontrol hücresi, hedef perturbasyon, hücre bağlamı, assay ve mümkünse doz/zaman bilgisini standartlaştır.
+3. Perturbasyon ve bağlam düzeyinde sızıntısız test kümeleri kur.
+4. No-change, ortalama yanıt, doğrusal/additif modeller gibi basit baseline'ları öncele.
+5. Yalnız benchmark'ta katkı gösteren modelleri araştır; belirsizliği ve kapsam dışını raporla.
+6. Sonraki kapıda, bağımsız laboratuvar ölçümüyle önceden belirlenmiş tahminleri test et.
 
-1. **Yükle:** Visium (ve ileride Visium HD / Xenium / CosMx) + scRNA-seq referansı.
-2. **Seç:** Hastalık paketi (örn. meme kanseri) ve analiz şablonu.
-3. **Çalıştır:** QC → dekonvolüsyon → spatial domain → komşuluk → ilaç hedefi → rapor.
-4. **İncele:** Etkileşimli doku haritası, belirsizlik katmanı, hücre tipi dağılımı, bölge istatistikleri.
-5. **Paylaş:** Yöntem + sınırlamalar + RUO uyarısı içeren rapor; ekip üyeleriyle paylaşım.
+İlk hesaplamalı fizibilite sistemi Arc VCC 2025 H1 hESC CRISPRi Perturb-seq'tir. Bu, bir hastalık modeli değildir; sadece aynı hücre hattında görülmemiş perturbasyon hedeflerine genellenme için dar bir ilk testtir. Hücre bağlamı dış testi için ayrıca uygun veri gerekir.
 
-## 4. Hedef kullanıcı
+## İlk kullanıcı ve olası değer
 
-| Segment | İhtiyaç | Ürün değeri |
-|---|---|---|
-| Akademik araştırma laboratuvarları | Hızlı, tekrarlanabilir analiz; yayın için görsel | Düşük kurulum maliyeti, şeffaf metodoloji |
-| Kanser araştırma merkezleri | Çok örnekli karşılaştırma, hipotez üretimi | Hastalık paketleri + benchmark |
-| Biyoteknoloji / ilaç Ar-Ge | Hedef ve mikroçevre analizi | İlaç hedefi skorlama, mekânsal kanıt |
-| Çekirdek tesisler (core facilities) | Hizmet olarak analiz, rapor | Çok kiracılı, markalı rapor |
-| Hastane araştırma birimleri | Veri güvenliği, denetim | On-prem / VPC seçeneği, audit log |
+İlk kullanıcı hipotezi, deney sayısını ve maliyetini yöneten hücre biyolojisi veya keşif Ar-Ge ekibidir. Olası değer, deney yapılmadan önce aday perturbasyonları sıralamaktır. Bu ödeme isteği doğrulanmış değildir; teknik benchmark başarısı tek başına satın alma gerekçesi sayılmaz.
 
-**İlk 18 ay odak:** akademik laboratuvarlar + kanser araştırma merkezleri. Klinik kullanım kapsam dışı (RUO).
+## Ürünün kanıt düzeyi
 
-## 5. Hastalık seçim kriteri
+- **Bugün:** ilk public aggregate dataset ve iki basit baseline ile keşifsel fizibilite; dış doğrulama yok.
+- **Henüz yok:** Topiome perturbasyon modeli, doğrulanmış tahmin, deney tasarım önerisi veya ücretli analiz hizmeti.
+- **Gerekli kanıt:** görülmemiş perturbasyon/bağlam testinde baselinelara karşı tekrarlanabilir katkı; ardından bağımsız deneysel test.
+- **RUO:** tanı, prognoz, tedavi seçimi, klinik karar veya kişiye özel müdahale iddiası yok.
 
-Bir hastalık paketi ancak şu koşullarda açılır:
+## Dağıtım ve iş modeli
 
-1. En az **3 bağımsız çalışmada** yeterli sayıda örnek/spot var.
-2. Eşleşen **scRNA-seq referansı** kamuya açık veya lisanslı.
-3. Hastalığa özgü **hücre tipleri ve bölge tanımları** literatürde yerleşik.
-4. En az bir **annotasyonlu** spatial veri seti (held-out validasyon için).
-5. Benchmark eşikleri (`docs/VALIDATION.md`) geçilmiş.
+Önce laboratuvarsız hesaplamalı fizibilite yapılacak. Ürünleştirme ve ücretlendirme kararı; bilimsel kapı, deney ortağı ve potansiyel alıcı görüşmeleri tamamlanmadan verilmeyecek. Uzun vadeli olası ürün, araştırmacının kendi perturbasyon/bağlam verisinde belirsizlikle yanıt tahmini ve deney önceliklendirmesidir; henüz kesinleşmiş paket veya fiyat yoktur.
 
-İlk 6 paket: meme, akciğer, kolorektal, prostat, melanom, GBM. Gerekçe: TCGA/HTAN/GEO ve 10x public veri bolluğu.
+## Eski spatial ürün
 
-## 6. Fiyatlandırma (taslak)
+Önceki spatial-transkriptomik uygulaması kod ve sonuçlarıyla legacy olarak korunur. Yerel spatial veri dosyaları temizlendi. Eski GNN, disease-pack ve Visium sonuçları yeni perturbasyon ürününün kanıtı veya modeli değildir. Ayrıntı: `docs/legacy/spatial/`.
 
-| Plan | Yıllık | Kapsam |
-|---|---|---|
-| Academic | Ücretsiz / onaylı | 1 kullanıcı, 3 proje, temel paketler, topluluk desteği |
-| Basic | $129 | 1 kullanıcı, 1 cihaz/oturum, 10 proje, standart paketler |
-| Lab | $399 | 3 kullanıcı, 30 proje, öncelikli destek, ortak rapor |
-| Institution | Teklif | On-prem/VPC, SSO, sınırsız proje, eğitim, DPA |
+## RUO ifadesi
 
-Fiyatlar pilot geri bildirimiyle değişecek. Ödeme altyapısı Stripe (test modu) üzerinden kurulacak.
-
-## 7. Değer önerisi (kısa)
-
-> **From spots to story.** Topiome turns spatial transcriptomics into a validated, shareable tissue atlas — with uncertainty visible.
-
-Türkçe:
-
-> **Spotlardan doku hikâyesine.** Topiome, spatial transcriptomics verisini doğrulanmış ve paylaşılabilir bir doku atlasına dönüştürür; belirsizliği görünür kılar.
-
-## 8. Ürün ilkeleri
-
-- **Bilim önce:** Her özellik bir yayın/validasyon sorusuna hizmet etmiyorsa ertelenir.
-- **Şeffaflık:** Kullanılan yöntem, sürüm, veri ve sınırlamalar raporun parçasıdır.
-- **Belirsizlik bir özellik:** Gizlenmez, arayüzde birinci sınıf vatandaştır.
-- **Hız, doğruluğu satmaz:** Demo hızlı olabilir; üretim sonucu benchmark kapısından geçer.
-- **RUO:** Klinik iddia yok. Bu, ürünün güven sınırıdır.
-
-## 9. RUO uyarısı (zorunlu metin)
-
-> **For Research Use Only.** Topiome is not intended for diagnosis, prognosis, treatment selection, or clinical decision-making. Results are computational inferences from research data and must be independently validated.
-
-## 10. Başarı metrikleri
-
-- Aktif laboratuvar sayısı, aylık analiz edilen örnek sayısı
-- İlk analizden rapora süre (hedef: < 30 dk)
-- Rapor indirme / paylaşım oranı
-- Pilot kurumlarda tekrar kullanım (retention)
-- Benchmark eşiklerini geçen hastalık paketi sayısı
-- Kullanıcı başına aylık gelir (ARPU), yıllık yenileme (NRR)
+> **For Research Use Only.** Topiome is not intended for diagnosis, prognosis, treatment selection, patient management, or clinical decision-making. Predictions are research hypotheses and require independent validation.

@@ -3,21 +3,20 @@ import { Logo } from "@/components/ui/logo";
 
 const groups = [
   {
-    title: "Product",
+    title: "Research",
     links: [
-      { href: "/#product", label: "Platform" },
-      { href: "/#packs", label: "Disease packs" },
-      { href: "/#validation", label: "Validation" },
-      { href: "/pricing", label: "Pricing" },
+      { href: "/#research", label: "Scientific question" },
+      { href: "/#method", label: "Validation approach" },
+      { href: "/#status", label: "Project status" },
     ],
   },
   {
-    title: "Science",
+    title: "Methods",
     links: [
-      { href: "/docs", label: "Methodology" },
-      { href: "/docs#validation", label: "Benchmarks" },
-      { href: "/docs#data", label: "Data formats" },
-      { href: "/docs#limitations", label: "Limitations" },
+      { href: "/docs", label: "Research plan" },
+      { href: "/docs#benchmark", label: "Benchmark design" },
+      { href: "/docs#data", label: "Data sources" },
+      { href: "/docs#limits", label: "Limitations" },
     ],
   },
   {
@@ -39,8 +38,7 @@ export function SiteFooter() {
           <div>
             <Logo />
             <p className="mt-4 max-w-xs text-xs leading-relaxed text-slate">
-              Spatial transcriptomics turned into validated, shareable tissue atlases — with
-              uncertainty visible on every spot.
+              Computational research into cellular responses to defined interventions, with evidence and uncertainty made explicit.
             </p>
             <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.14em] text-amber">
               For research use only

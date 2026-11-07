@@ -7,6 +7,7 @@ from ..deps import AnalystAuth, CurrentAuth, DbSession, log_audit
 from ..disease_packs import get_pack
 from ..models import Project, Run, Sample
 from ..schemas import ProjectCreate, ProjectDetail, ProjectOut, ProjectUpdate
+from ..services.quotas import QuotaExceeded, ensure_project
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -41,6 +42,12 @@ def create_project(
         get_pack(payload.disease_pack)
     except KeyError as exc:
         raise HTTPException(status_code=400, detail="Unknown disease pack") from exc
+
+    try:
+        ensure_project(db, auth.org.id, auth.org.plan)
+    except QuotaExceeded as exc:
+        raise HTTPException(status_code=402, detail=str(exc)) from exc
+
     project = Project(
         org_id=auth.org.id,
         name=payload.name,
@@ -137,6 +144,10 @@ def archive_project(
 ) -> dict:
     project = _get_project(db, auth, project_id)
     project.archived = True
+    samples = list(db.scalars(select(Sample).where(Sample.project_id == project.id)))
+    for sample in samples:
+        sample.archived = True
+        sample.status = "archived"
     log_audit(
         db,
         org_id=auth.org.id,

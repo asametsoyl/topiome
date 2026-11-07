@@ -48,11 +48,15 @@ def _side(run: Run, payload: dict[str, Any], label: str) -> dict[str, Any]:
     significant = summary.get("significant_interactions")
     if significant is None:
         significant = sum(1 for item in communication if item.get("significant"))
+    sample = run.sample
     return {
         "label": label,
         "run_id": run.id,
         "sample_id": run.sample_id,
         "sample_name": run.sample.name if run.sample else None,
+        "platform": (sample.platform or "unknown") if sample else "unknown",
+        "species": (sample.species or "unknown") if sample else "unknown",
+        "condition": (sample.condition or "unspecified") if sample else "unspecified",
         "project_id": run.project_id,
         "disease_pack": run.disease_pack,
         "pack_name": _pack_name(run, payload),
@@ -91,6 +95,21 @@ def _warnings(run_a: Run, side_a: dict, run_b: Run, side_b: dict) -> list[str]:
         warnings.append(
             f"Runs were produced by different pipeline versions "
             f"({run_a.pipeline_version} vs {run_b.pipeline_version})."
+        )
+    if side_a["platform"].casefold() != side_b["platform"].casefold():
+        warnings.append(
+            f"Runs use different assay platforms ({side_a['platform']} vs {side_b['platform']}); "
+            "spot and cell-level quantities may not be directly comparable."
+        )
+    if side_a["species"].casefold() != side_b["species"].casefold():
+        warnings.append(
+            f"Runs use different species ({side_a['species']} vs {side_b['species']}); "
+            "gene and cell-type definitions may not be equivalent."
+        )
+    if side_a["condition"].casefold() != side_b["condition"].casefold():
+        warnings.append(
+            f"Runs have different recorded conditions ({side_a['condition']} vs "
+            f"{side_b['condition']}); differences are descriptive, not a statistical test."
         )
     if run_a.sample_id == run_b.sample_id:
         warnings.append(

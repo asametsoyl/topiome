@@ -15,24 +15,24 @@ const instrument = Instrument_Serif({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_URL ?? "http://localhost:3000"),
   title: {
-    default: "Topiome — Spatial disease atlas platform",
+    default: "Topiome — Cellular perturbation research",
     template: "%s · Topiome",
   },
   description:
-    "Topiome turns spatial transcriptomics into validated, shareable tissue atlases: cell composition, spatial domains, target evidence, and uncertainty — for research use only.",
+    "Topiome is a research program exploring predictions of cellular responses to defined genetic perturbations, with benchmark-first evaluation and uncertainty made explicit.",
   keywords: [
-    "spatial transcriptomics",
-    "spatial omics",
-    "tissue atlas",
-    "deconvolution",
-    "Visium",
+    "single-cell perturbation",
+    "Perturb-seq",
+    "cellular response prediction",
+    "virtual cell research",
+    "CRISPR perturbation",
     "bioinformatics",
     "research use only",
   ],
   openGraph: {
-    title: "Topiome — Spatial disease atlas platform",
+    title: "Topiome — Cellular perturbation research",
     description:
-      "From spots to story. Validated spatial atlases with visible uncertainty. For research use only.",
+      "Researching how cells respond to defined interventions. Benchmark-first, transparent about uncertainty, for research use only.",
     type: "website",
     siteName: "Topiome",
   },

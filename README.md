@@ -1,63 +1,51 @@
 # Topiome
 
-**Spatial disease atlas platform — Research Use Only.**
+**Computational research on cellular responses to defined perturbations — Research Use Only.**
 
-Topiome, spatial transcriptomics verisini hücre kompozisyonu, mekânsal bölgeler ve ilaç hedefi kanıtlarıyla birlikte paylaşılabilir bir doku atlasına dönüştürür.
+Topiome is exploring whether single-cell models can predict responses to genetic interventions in perturbations and biological contexts that were not used during training. The active project has one public aggregate dataset and exploratory baselines; **Topiome has not trained or validated a perturbation-response model.**
 
-> Eski ad: Glio-Cartography (GBM odaklı, Teknofest). Yeni ürün: hastalıktan bağımsız çekirdek + doğrulanmış hastalık paketleri.
+The previous spatial-transcriptomics product is retained as legacy code and documented separately. Its results do not support claims about the new research direction.
 
-## Neden
+## Research premise
 
-- Tekrarlanabilir dekonvolüsyon ve spatial domain analizi
-- Hastalığa özgü marker, bölge ve hedef tanımları
-- Spot bazında belirsizlik ve kalibrasyon
-- Yayına hazır, sınırlamaları açık rapor
+- Start with public perturbation-response measurements whose reuse terms are documented.
+- Test unseen perturbations and contexts with leakage-resistant splits.
+- Compare against simple baselines before using more complex models.
+- Report biological-response metrics and calibrated uncertainty.
+- Require independent experimental measurements before making prospective biological claims.
 
-## İlk hastalık paketleri
-
-Meme · Kolorektal · Akciğer · Melanom · Prostat · Glioblastoma
-
-## Teknoloji
-
-Next.js 16 · React 19 · TypeScript · Tailwind 4 · FastAPI · SQLAlchemy 2 · Python 3.12 · PostgreSQL · DB tabanlı worker kuyruğu · Docker Compose · S3 (planlı)
-
-## Kurulum
+## Development
 
 ```bash
-# Gereksinimler: Node >= 22, uv, Docker (opsiyonel)
+# Requirements: Node >= 22, uv, Python 3.12; Docker is optional
 bash scripts/setup.sh
 npm run dev
 ```
 
 - Web: http://localhost:3000
 - API: http://localhost:8000/docs
-- Demo: `demo@topiome.com` / `demo1234`
-- Gerçek veri: 10x Space Ranger `.h5` veya `matrix.mtx` + `barcodes` + `features` + `tissue_positions` (zip/tar da olur)
+- New account registration is paused. Existing accounts open the legacy spatial workspace.
 
-Üretim: `docs/DEPLOY.md` (Docker Compose: Postgres + API + worker + web).
+## Data policy
 
-## Dokümantasyon
+Public research datasets stay under local `data/perturbation/` and are excluded from git. Before use, record the exact source, dataset-level license, retrieval date, hash, assay/context labels, and allowed use. Do not place human-subject data, credentials, or personally identifying information in the repository, demo seed, or logs.
 
-| Dosya | İçerik |
+## Project docs
+
+| File | Purpose |
 |---|---|
-| [`AGENTS.md`](AGENTS.md) | AI ajanları ve geliştiriciler için giriş noktası |
-| [`docs/STATUS.md`](docs/STATUS.md) | Yapılanlar, sıradakiler, oturum kaydı |
-| [`docs/PRODUCT.md`](docs/PRODUCT.md) | Vizyon, kullanıcı, fiyatlandırma |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Mimari ve veri akışı |
-| [`docs/VALIDATION.md`](docs/VALIDATION.md) | Doğruluk stratejisi ve benchmark eşikleri |
-| [`docs/DISEASE_PACKS.md`](docs/DISEASE_PACKS.md) | Hastalık paketi şeması |
-| [`docs/DATA.md`](docs/DATA.md) | Veri formatları ve gizlilik |
-| [`docs/SECURITY.md`](docs/SECURITY.md) | KVKK/GDPR ve güvenlik |
-| [`docs/BUSINESS.md`](docs/BUSINESS.md) | Şirketleşme ve iş modeli |
-| [`docs/BRAND.md`](docs/BRAND.md) | Marka ve görsel kimlik |
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Fazlar |
-| [`docs/DECISIONS.md`](docs/DECISIONS.md) | ADR'ler |
-| [`docs/API.md`](docs/API.md) | REST API |
+| [`AGENTS.md`](AGENTS.md) | Project rules for contributors and agents |
+| [`docs/STATUS.md`](docs/STATUS.md) | Current work, next steps, and decisions |
+| [`docs/PRODUCT.md`](docs/PRODUCT.md) | New research product direction |
+| [`docs/VALIDATION.md`](docs/VALIDATION.md) | Perturbation benchmark and scientific gates |
+| [`docs/DATA.md`](docs/DATA.md) | Dataset selection, rights, and local storage |
+| [`docs/DECISIONS.md`](docs/DECISIONS.md) | Architecture and product decisions |
+| [`docs/legacy/`](docs/legacy/) | Archived spatial-product evidence and status |
 
-## RUO uyarısı
+## RUO boundary
 
-> **For Research Use Only.** Topiome is not intended for diagnosis, prognosis, treatment selection, or clinical decision-making. Results are computational inferences from research data and must be independently validated.
+> **For Research Use Only.** Topiome is not intended for diagnosis, prognosis, treatment selection, patient management, or clinical decision-making. Research predictions are hypotheses and require independent validation.
 
-## Lisans
+## License
 
-Proprietary. Tüm hakları saklıdır. Marka ve kod, şirket kuruluşu tamamlanana kadar kuruculara aittir.
+Proprietary. All rights reserved. Dataset licenses are separate and recorded per source.

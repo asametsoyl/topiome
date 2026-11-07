@@ -8,6 +8,8 @@ node_modules/
 out/
 build/
 dist/
+apps/web/test-results/
+apps/web/playwright-report/
 
 # python
 .venv/
@@ -24,6 +26,7 @@ htmlcov/
 .env
 .env.*
 !.env.example
+!infra/.env.production.example
 *.pem
 *.key
 

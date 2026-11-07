@@ -1,112 +1,70 @@
-# Veri — Topiome
+# Veri — Topiome perturbasyon yanıtı araştırması
 
-## 1. İlkeler
+## 1. Aktif veri gereksinimi
 
-- Gerçek hasta verisi yalnızca kullanıcının org'unda, şifreli olarak saklanır.
-- Repo'ya, demo'ya, log'a, prompt'a hasta verisi girmez.
-- Her veri seti için kaynak, lisans, tarih, hash ve kullanım amacı kaydedilir.
-- Veri silme talebi 30 gün içinde uygulanır; yedeklerden de temizlenir.
+İlk model deneyi için tek hücre kontrol ve perturbasyon sayımları gerekir. Dataset düzeyinde en az şu metadata kaydedilmeden örnek analize girmez:
 
-## 2. Desteklenen formatlar (Faz 1)
+| Alan | Amaç |
+|---|---|
+| Dataset, makale, kaynak URL ve DOI/erişim numarası | Atıf ve tekrar edinim |
+| Kullanım lisansı / veri kullanım koşulu | Ticari ve araştırma kullanım sınırları |
+| Ham ve işlenmiş dosya hash'i | İçerik bütünlüğü |
+| Perturbasyon kimliği / hedef / tür | Müdahaleyi tanımlamak |
+| Kontrol grubu ve kılavuz/compound eşlemesi | Müdahale etkisinin referansı |
+| Hücre hattı/donör/başlangıç durumu | Bağlam bazlı dış test |
+| Assay, batch, zaman, doz ve perturbasyon verimliliği | Domain kayması ve etki yorumu |
+| Gen/feature kimliği ve normalizasyon | Yöntem uyumu |
+| Biyolojik tekrar / sample metadata | Doğru istatistik birimi |
 
-### 10x Visium
-```
-sample/
-├── matrix.mtx.gz
-├── barcodes.tsv.gz
-├── features.tsv.gz
-├── tissue_positions.csv
-├── scalefactors_json.json
-└── (opsiyonel) tissue_hires_image.png
-```
+Veri hücre başına satırlardan ibaret değildir: gözlem, perturbasyon, kontrol, hücre bağlamı, donör/örnek, teknik batch, assay ve ham sayım bilgisi doğru bağlanmalıdır. Yalnız ortak gen adları eşleşiyor diye farklı çalışmalar doğrudan birleştirilmez.
 
-### scRNA-seq referansı
-- `.h5ad` (AnnData), gözlemlerde `cell_type` kolonu.
-- Alternatif: `.rds` (Seurat) → Faz 2.
+## 2. İlk veri bileşeni — Arc VCC 2025 / PIE işlenmiş etkiler
 
-### Metadata (`sample.json`)
-```json
-{
-  "sample_id": "S001",
-  "disease": "breast",
-  "tissue": "breast",
-  "platform": "visium",
-  "species": "human",
-  "condition": "tumor",
-  "sex": "female",
-  "age_group": "50-59",
-  "batch": "run-2026-01",
-  "notes": ""
-}
-```
+- Kaynak deney: Arc Virtual Cell Challenge 2025, H1 hESC CRISPRi Perturb-seq; yaklaşık 300 bin hücre ve 300 hedef içeren challenge bileşeni.
+- Kullanılan yerel subset: Arc Institute PIE aynasındaki preprocessed aggregate arrays; 12.286 gen, 190 perturbasyon satırı (146 train / 44 validation), 49.3 MB. Ham hücre düzeyi `.h5ad` dosyaları indirilmedi.
+- Lisans: Arc Virtual Cell Atlas sayfası VCC 2025 bileşenini CC0 1.0 olarak listeliyor. Hugging Face aynasının kartında şu an ayrı bir lisans alanı görünmüyor; kullandığımız kaynak/metadata bu farkı kaydediyor. Kaynak ve hash manifesti: `data/perturbation/raw/arc-vcc-2025-pie/manifest.json`.
+- Kullanım kapsamı: yalnız aynı H1 bağlamında görülmemiş perturbasyon hedefleri üzerinde aggregate log2 fold-change baseline fizibilitesi. Tek hücre dağılımı, yeni hücre bağlamı veya deney faydası ölçülmedi.
+- İşlenmiş ayna notu: [ArcInstitute/PIE_arc_vcc_25](https://huggingface.co/datasets/arcinstitute/PIE_arc_vcc_25); upstream veri ve challenge tanımı [Arc Virtual Cell Atlas](https://arcinstitute.org/tools/virtualcellatlas) ile [Arc VCC 2025 deposunda](https://github.com/ArcInstitute/arc-virtual-cell-atlas/tree/main/virtual-cell-challenge) yer alır.
 
-## 3. Yükleme kuralları
+## 3. Kaynak havuzu ve sonraki adaylar
 
-- Maksimum boyut: 2 GB (yapılandırılabilir).
-- Zip veya klasör (tarayıcıda çoklu dosya).
-- Zorunlu dosyalar eksikse anlaşılır hata; kısmi run başlatılmaz.
-- Barcode'lar tissue_positions ile eşleşmeli; eşleşmeyenler raporlanır.
-- Spot sayısı < 500 ise uyarı; < 100 ise run reddedilir (paket eşiği değişebilir).
+**Arc Virtual Cell Atlas** açık tek hücre ve perturbasyon koleksiyonları sağlıyor: <https://arcinstitute.org/tools/virtualcellatlas>. Arc sayfası VCC 2025 ile Tahoe-100M verilerini CC0 olarak listeliyor; her bileşen için kayıt, README, alıntı ve lisans ayrı doğrulanmalı. Tüm koleksiyon MVP için indirilmeyecek. Önce küçük ve değerlendirilebilir tek bir görev seçilecek.
 
-## 4. Depolama düzeni
+Ek kaynaklar (ör. scPerturb, GEO, Figshare, Zenodo) ancak dataset bazında lisans/erişim hakkı, kontrol koşulları ve metadata incelendikten sonra kabul edilir. GEO'da erişilebilir olmak yeniden dağıtım veya ticari eğitim hakkının kanıtı değildir.
 
-```
-orgs/{org_id}/
-  projects/{project_id}/
-    samples/{sample_id}/
-      raw/            # kullanıcı dosyaları (değişmez)
-      derived/        # pipeline çıktıları
-      report/         # HTML/PDF
-      sample.json
+## 4. Yerel dizin
+
+```text
+data/
+  perturbation/
+    README.md
+    raw/          # yeniden edinilebilir kaynak dosyalar, git dışı
+    processed/    # normalize/filtrelenmiş türevler, git dışı
+    manifests/    # metadata, split ve checksum kayıtları; hassas olmayan küçük metin
 ```
 
-- Ham dosyalar salt okunur; pipeline yeni klasöre yazar.
-- Her çıktı `manifest.json` ile sürümlenir.
-- Signed URL süresi: 15 dakika (indirme), 60 dakika (yükleme).
+`data/` içeriği git'e girmez. Ham verinin kaynağı, lisansı, tarihi, hash'i ve işleme kodu manifestte tutulur. Kullanıcı/proje verisi research benchmark klasörüne alınmaz. Hiçbir gerçek hasta veya kimlik bilgisi repo, demo seed, ekran görüntüsü ya da log içine girmez.
 
-## 5. Kamuya açık veri kaynakları
+## 5. Önceden var olan veriler
 
-| Kaynak | Kullanım | Lisans notu |
-|---|---|---|
-| 10x Genomics public datasets | Visium örnekleri | 10x kullanım koşulları |
-| HTAN Data Portal | Tümör atlasları | Veri seti bazında |
-| GEO | Visium/scRNA-seq | Veri seti bazında |
-| Human Cell Atlas | Referans | HCA kullanım koşulları |
-| Tabula Sapiens | Referans | CC BY 4.0 (doğrulanacak) |
-| TCGA | Bulk referans | TCGA veri kullanım politikası |
-| Wu et al. 2021 meme kanseri scRNA atlası (GEO GSE176078) | Meme referans imzaları (`references/breast_wu2021_v1_signatures.*`); test hastaları CID4465 ve CID4535 hariç | GEO kamu verisi; yayına atıf zorunlu |
-| Wu et al. 2021 Visium + patolog anotasyonları (Zenodo 10.5281/zenodo.4739739) | GNN eğitimi/testi (hasta düzeyinde ayrım) | CC BY 4.0 |
-| GEO GSE331374 (GSM9744831, GBM primer tümör Visium) | GBM gerçek veri kontrolü + Ivy GAP | GEO kamu verisi; atıf |
-| Ivy GAP (Allen Institute) | GBM atlas kontrolü — `packages/disease-packs/references/ivygap_gbm_ish.json` (28 gen × 5 yapı, türetilmiş ortalamalar; Glio-Cartography'den) | Allen Institute Terms of Use — **ticari kullanım teyidi bekliyor** (`license_status: review_pending`, STATUS D5) |
+2026-11-07 ürün pivotu sırasında yerel 10x Visium / scRNA spatial ham ve türetilmiş dosyaları temizlendi (yaklaşık 9.2 GB). Bunlar yeni perturbasyon görevine girdi değildir ve public source'lardan yeniden edinilebilir. Eski spatial analiz kodu ile küçük model kartı/raporlar kaynak geçmişinde ve `docs/legacy/spatial/` altında korunuyor.
 
-> Her veri seti indirilmeden önce lisansı `references.yaml`'a yazılır; lisanssız veri kullanılmaz.
+## 6. Kaynak kaydı şablonu
 
-## 6. Sentetik demo verisi
+```yaml
+dataset_id: arc-vcc-2025-<task>
+source_url: https://arcinstitute.org/tools/virtualcellatlas
+publication_doi: null
+retrieved_at: null
+license: CC0-1.0 # yalnız dataset bileşeninin kaynağı bunu teyit ederse
+file_sha256: null
+assay: null
+species: human
+cell_contexts: []
+perturbation_types: []
+controls: []
+processing_version: null
+use_status: review_pending
+```
 
-- `scripts/generate_demo_data.py` ile üretilir.
-- 1.200 spot, 6 hücre tipi, 5 domain, bilinen ground truth.
-- Amaç: UI ve pipeline smoke test'i; bilimsel iddia değil.
-- Demo verisi `data/demo/` altında; git'e girmez (üretim script'i girer).
-
-## 7. Veri kalitesi kontrolleri
-
-- Toplam UMI, gen sayısı, mitokondriyal oran.
-- Spot–doku örtüşmesi (görüntü varsa).
-- Barcode tekilliği.
-- Referans gen kapsaması (ortak gen sayısı).
-- Batch metadata zorunluluğu (mümkünse).
-
-## 8. Gizlilik sınıfları
-
-| Sınıf | Örnek | Saklama |
-|---|---|---|
-| Public | Yayınlanmış veri seti | Süresiz |
-| Internal | Yayınlanmamış araştırma | 24 ay (varsayılan) |
-| Sensitive | Hasta kimliğiyle eşleşebilir | 12 ay, org politikası |
-| Restricted | Klinik veri | Faz 3; ayrı ortam |
-
-## 9. Veri silme
-
-- Kullanıcı sample/project siler → soft delete + 30 gün geri alma.
-- 30 gün sonra hard delete; S3 versiyonları ve yedekler dahil.
-- Audit log silme işlemini kaydeder (kim, ne zaman, ne).
+`review_pending` durumundaki veriler eğitim, demo veya ürün iddiasında kullanılmaz.

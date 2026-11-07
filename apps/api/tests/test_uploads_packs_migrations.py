@@ -62,7 +62,7 @@ def test_fresh_database_migrates_to_head(tmp_path):
     engine = create_engine(f"sqlite:///{tmp_path / 'fresh.db'}")
     upgrade_db(engine)
     with engine.connect() as conn:
-        assert conn.execute(text("select version_num from alembic_version")).scalar() == "0002"
+        assert conn.execute(text("select version_num from alembic_version")).scalar() == "0003"
     columns = {c["name"] for c in inspect(engine).get_columns("reports")}
     assert {"status", "approved_by", "approved_at", "approval_note"} <= columns
 
@@ -78,7 +78,7 @@ def test_pre_alembic_database_is_stamped_then_upgraded(tmp_path):
             conn.execute(text(f"alter table reports drop column {column}"))
     upgrade_db(engine)
     with engine.connect() as conn:
-        assert conn.execute(text("select version_num from alembic_version")).scalar() == "0002"
+        assert conn.execute(text("select version_num from alembic_version")).scalar() == "0003"
     assert "provenance" in {c["name"] for c in inspect(engine).get_columns("runs")}
 
 

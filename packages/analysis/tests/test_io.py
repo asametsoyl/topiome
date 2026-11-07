@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import gzip
+import shutil
 from pathlib import Path
 
 import h5py
 import numpy as np
+import pandas as pd
 import pytest
 import scipy.io
 import scipy.sparse as sp
@@ -34,7 +36,9 @@ def _write_positions(path: Path, barcodes: list[str], header: bool = True) -> No
         lines.append("barcode,in_tissue,array_row,array_col,pxl_row_in_fullres,pxl_col_in_fullres")
     for i, barcode in enumerate(barcodes + ["OFFTISSUE-1"]):
         in_tissue = 0 if barcode.startswith("OFF") or i >= N_SPOTS - 10 else 1
-        lines.append(f"{barcode},{in_tissue},{i // 12},{i % 12},{100 + 10 * (i // 12)},{200 + 10 * (i % 12)}")
+        lines.append(
+            f"{barcode},{in_tissue},{i // 12},{i % 12},{100 + 10 * (i // 12)},{200 + 10 * (i % 12)}"
+        )
     path.write_text("\n".join(lines) + "\n")
 
 
@@ -73,7 +77,9 @@ def mtx_sample(tmp_path: Path) -> Path:
     with gzip.open(matrix_dir / "barcodes.tsv.gz", "wt") as fh:
         fh.write("\n".join(barcodes) + "\n")
     with gzip.open(matrix_dir / "features.tsv.gz", "wt") as fh:
-        fh.write("\n".join(f"ENSG{i:05d}\t{g}\tGene Expression" for i, g in enumerate(genes)) + "\n")
+        fh.write(
+            "\n".join(f"ENSG{i:05d}\t{g}\tGene Expression" for i, g in enumerate(genes)) + "\n"
+        )
     _write_positions(root / "spatial" / "tissue_positions_list.csv", barcodes, header=False)
     (root / "._matrix.mtx").write_bytes(b"\x00\x05AppleDouble")  # exFAT junk must be ignored
     return root
@@ -83,6 +89,70 @@ def test_discovery_finds_nested_files(h5_sample: Path):
     files = discover_visium(h5_sample)
     assert files.h5 is not None and files.positions is not None
     assert files.missing() == []
+
+
+def test_discovery_ignores_exfat_barcode_and_feature_sidecars(mtx_sample: Path):
+    matrix_dir = mtx_sample / "filtered_feature_bc_matrix"
+    (matrix_dir / "._barcodes.tsv.gz").write_bytes(b"AppleDouble, not a barcode table")
+    (matrix_dir / "._features.tsv.gz").write_bytes(b"AppleDouble, not a feature table")
+
+    files = discover_visium(mtx_sample)
+
+    assert files.barcodes is not None and files.barcodes.name == "barcodes.tsv.gz"
+    assert files.features is not None and files.features.name == "features.tsv.gz"
+
+
+def test_discovery_uses_unique_series_level_mtx_sidecars(mtx_sample: Path):
+    matrix_dir = mtx_sample / "filtered_feature_bc_matrix"
+    shutil.move(matrix_dir / "barcodes.tsv.gz", mtx_sample.parent / "barcodes.tsv.gz")
+    shutil.move(matrix_dir / "features.tsv.gz", mtx_sample.parent / "features.tsv.gz")
+
+    files = discover_visium(mtx_sample)
+    dataset = load_visium(mtx_sample, max_genes=20)
+
+    assert files.barcodes == mtx_sample.parent / "barcodes.tsv.gz"
+    assert files.features == mtx_sample.parent / "features.tsv.gz"
+    assert len(dataset.barcodes) == N_SPOTS - 10
+
+
+def test_visium_hd_selects_16um_h5_and_parquet_positions(tmp_path: Path):
+    counts, barcodes, genes = _counts()
+    hd = tmp_path / "binned_outputs" / "square_016um"
+    hd.mkdir(parents=True)
+    _write_h5(hd / "filtered_feature_bc_matrix.h5", counts, barcodes, genes)
+    positions = hd / "spatial" / "tissue_positions.parquet"
+    positions.parent.mkdir(parents=True)
+    pd.DataFrame(
+        {
+            "barcode": barcodes,
+            "in_tissue": [0 if i >= N_SPOTS - 10 else 1 for i in range(N_SPOTS)],
+            "array_row": [i // 12 for i in range(N_SPOTS)],
+            "array_col": [i % 12 for i in range(N_SPOTS)],
+            "pxl_row_in_fullres": [100 + 10 * (i // 12) for i in range(N_SPOTS)],
+            "pxl_col_in_fullres": [200 + 10 * (i % 12) for i in range(N_SPOTS)],
+        }
+    ).to_parquet(positions, index=False)
+
+    files = discover_visium(tmp_path)
+    dataset = load_visium(tmp_path, max_genes=50)
+    assert files.h5 == hd / "filtered_feature_bc_matrix.h5"
+    assert files.positions == positions
+    assert dataset.metadata["platform"] == "visium_hd"
+    assert dataset.metadata["bin_size_um"] == 16
+    assert len(dataset.barcodes) == N_SPOTS - 10
+
+
+def test_visium_hd_rejects_unsupported_finer_bins(tmp_path: Path):
+    hd = tmp_path / "binned_outputs" / "square_008um"
+    hd.mkdir(parents=True)
+    (hd / "filtered_feature_bc_matrix.h5").touch()
+    with pytest.raises(ValueError, match="square_016um"):
+        discover_visium(tmp_path)
+
+
+def test_loader_enforces_in_memory_spot_limit(h5_sample: Path):
+    with pytest.raises(ValueError, match="in-memory analysis limit"):
+        load_visium(h5_sample, max_spots=100)
 
 
 def test_h5_and_mtx_layouts_load_identically(h5_sample: Path, mtx_sample: Path):

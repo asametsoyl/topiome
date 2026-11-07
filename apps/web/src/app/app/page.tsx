@@ -88,7 +88,7 @@ export default function DashboardPage() {
             <Stat
               label="Samples"
               value={formatNumber(summary?.samples ?? 0)}
-              hint="Uploaded or demo samples"
+              hint="Uploaded research samples"
             />
             <Stat
               label="Runs"
@@ -176,7 +176,7 @@ export default function DashboardPage() {
             <div className="p-5">
               <EmptyState
                 title="No runs yet"
-                description="Create a project, add a sample, and launch the analysis pipeline. The demo sample is a one-click start."
+                description="Create a project, upload public or appropriately licensed data, and launch an exploratory analysis."
                 action={
                   <Link
                     href="/app/projects?new=1"
@@ -205,7 +205,7 @@ export default function DashboardPage() {
                 {
                   icon: Microscope,
                   title: "Add a sample",
-                  body: "Upload Space Ranger files or use the demo sample.",
+                  body: "Upload public or appropriately licensed Space Ranger files.",
                   href: "/app/projects",
                 },
                 {
@@ -251,26 +251,25 @@ export default function DashboardPage() {
                 <span className="inline-flex size-8 items-center justify-center rounded-lg border border-teal/30 bg-teal/10 text-teal">
                   <ShieldCheck className="size-4" />
                 </span>
-                <Badge variant="teal">Benchmark passing</Badge>
+                <Badge variant="amber">Pack remains beta</Badge>
               </div>
               <div>
-                <p className="text-sm font-medium text-bone">Breast baseline · v0.1.0</p>
+                <p className="text-sm font-medium text-bone">Breast pack · held-out evaluation</p>
                 <p className="mt-1 text-[11px] leading-relaxed text-slate">
-                  Synthetic pseudospot benchmark, 1,200 spots. Numerical recovery only — not
-                  clinical validation.
+                  Wu 2021 · two held-out patients · same-study evaluation. Release gates remain unmet.
                 </p>
               </div>
               <div className="grid grid-cols-3 gap-px overflow-hidden rounded-lg border border-line bg-line">
                 {[
-                  { k: "JSD", v: "0.099" },
-                  { k: "Pearson", v: "0.862" },
-                  { k: "ARI", v: "0.634" },
+                  { k: "ARI", v: "0.260" },
+                  { k: "Macro-F1", v: "0.446" },
+                  { k: "ECE", v: "0.098" },
                 ].map((metric) => (
                   <div key={metric.k} className="bg-ink-2 px-2 py-2">
                     <p className="font-mono text-[9px] uppercase tracking-wider text-slate">
                       {metric.k}
                     </p>
-                    <p className="mt-0.5 font-mono text-sm text-teal">{metric.v}</p>
+                    <p className="mt-0.5 font-mono text-sm text-amber">{metric.v}</p>
                   </div>
                 ))}
               </div>
@@ -348,22 +347,20 @@ export default function DashboardPage() {
           <CardHeader
             title="Data notice"
             description="What this workspace contains."
-            action={<Badge variant="amber">Synthetic demo</Badge>}
+            action={<Badge variant="outline">Research use only</Badge>}
           />
           <CardBody className="space-y-3 text-[11px] leading-relaxed text-slate">
             <div className="flex items-start gap-2.5">
               <CircleDot className="mt-0.5 size-3.5 shrink-0 text-teal" />
               <p>
-                The seeded demo sample is <span className="text-bone-dim">synthetic</span>. Spot
-                expression, cell composition, and zones are generated from known profiles with
-                known ground truth.
+                Analyses use the files uploaded to this workspace and the selected versioned disease pack.
               </p>
             </div>
             <div className="flex items-start gap-2.5">
               <CircleDot className="mt-0.5 size-3.5 shrink-0 text-teal" />
               <p>
-                No patient data is present. Uploading data requires the right to use it and, where
-                applicable, ethics approval.
+                Upload only data your lab is authorized to process. Do not upload directly
+                identifying information; follow your institution's ethics and governance rules.
               </p>
             </div>
             <div className="flex items-start gap-2.5">

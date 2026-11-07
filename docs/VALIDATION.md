@@ -1,163 +1,104 @@
-# Validasyon — Topiome
+# Doğrulama — perturbasyon yanıtı araştırması
 
-> Eski sürümün en büyük sorunu buydu: dekonvolüsyon ve GNN doğrulukları düşüktü, belirsizlik raporlanmıyordu.
-> Bu dosya, "doğru görünen" değil **ölçülmüş** sonuç üretme sözleşmesidir.
+**Durum (2026-11-07):** ilk keşifsel aggregate baseline çalışması yapıldı. Topiome perturbasyon tahmin modeli ve bağımsız doğrulama yok; başarı iddiası yok.
 
-## 1. Neden düşüktü? (kök neden analizi)
+## 1. Test edilecek bilimsel iddia
 
-| Olası neden | Belirti | Yeni yaklaşım |
-|---|---|---|
-| Tek model, tek veri seti | Overfit; başka örnekte çöküş | Çok veri seti + held-out |
-| Referans scRNA-seq uyumsuzluğu | Hücre tipi karışması | Referans kalibrasyonu, ortak gen uzayı, batch düzeltme |
-| Düşük spot/örnek sayısı | Yüksek varyans | Veri-zengin hastalıklar; örnek başına minimum eşik |
-| Validasyonsuz GNN | Güzel görsel, anlamsız kümeler | Baseline + ARI/NMI + marker enrichment |
-| Belirsizlik yok | Kullanıcı kesin sanıyor | Spot bazında güven, calibration |
-| Değerlendirme metriği yok | "İyi görünüyor" | Önceden tanımlı metrik + eşik |
+Bir model, ölçülmüş başlangıç hücre bağlamı ve tanımlı müdahaleden, perturbasyon sonrası ölçülen single-cell yanıtını tahmin edebilir; bu tahmin, görülmemiş müdahale veya hücre bağlamına taşınır ve basit baseline'ları geçer.
 
-## 2. Validasyon katmanları
+Bu iddia tek bir görev ve assay için sınanır. Farklı perturbasyon türleri, hücre bağlamları, assay platformları ve zaman/doz kombinasyonları tek bir başarı metriğinde birleştirilmez.
 
-### A. Sentetik pseudospot (bilinen ground truth)
-scRNA-seq'den hücreleri karıştırarak sentetik spotlar üret. Kompozisyon bilinir.
-- Metrikler: RMSE, Jensen-Shannon divergence (JSD), Pearson/Spearman, hücre tipi F1.
-- Amaç: dekonvolüsyon algoritmasının matematiksel doğruluğu.
+## 2. Veri yeterlilik kapısı
 
-### B. Held-out gerçek örnek
-İdeal olarak **bağımsız çalışmalardan** test örnekleri. İlk uygulama Wu 2021 içinde yalnızca hasta düzeyi held-out'dır (4 eğitim / 2 test); bağımsız kohort henüz yoktur.
-- Annotasyonlu bölgeler varsa: ARI, NMI, adjusted Rand.
-- Yoksa: marker enrichment, pathologist spot-check, silüet.
-- Amaç: genellenebilirlik.
+Bir dataset şu bilgiler açıkça eşleşmeden modele alınmaz:
 
-### C. Pertürbasyon / kararlılık
-- Spot downsampling, gürültü ekleme, farklı normalizasyon.
-- Sonuçların değişim katsayısı; "stability score".
-- Amaç: sonuçların veri kalitesine duyarlılığı.
+- kontrol ve perturbasyon hücrelerinin tanımı;
+- müdahalenin hedefi, türü ve perturbasyon verimliliği (varsa);
+- hücre hattı / donör / durum / bağlam;
+- assay platformu, batch, doz ve ölçüm zamanı (mevcutsa);
+- ham/işlenmiş ifade semantiği, normalizasyon ve kalite filtreleri;
+- kaynak, lisans, indirme tarihi, hash ve kullanım sınırlaması.
 
-### D. Kalibrasyon
-- Güven skoru ile gerçek doğruluk uyumu: ECE (expected calibration error), reliability diagram.
-- Amaç: "0.9 güven" diyorsa gerçekten ~%90 doğru olmalı.
+Her dataset ayrı kaynak ve domain olarak değerlendirilir. Aynı deneyin hücreleri ya da aynı kültür/örnek farklı bölmelere ayrılmaz. Tekrarlı ölçümler bağımsız biyolojik tekrar gibi sayılmaz.
 
-### E. Biyolojik tutarlılık
-- Bilinen marker genlerinin beklenen hücre tiplerinde zenginleşmesi.
-- Ligand-receptor çiftlerinin beklenen komşuluklarda bulunması (uygulandı: `analysis/communication.py`, uzamsal permütasyon + BH-FDR).
-- Pathologist / alan uzmanı spot-check (en az 2 kişi, kör).
+## 3. Bölme planı — önce biyolojik genelleme
 
-### F. Her run'da otomatik güvenilirlik sinyalleri (Glio-Cartography'den, ADR-014)
-- **Yöntem uyumu:** NNLS ile marker z-skor softmax arasında spot başına 1−JSD. Ortalama < 0.7 → rapora uyarı. Eski üründe Tangram–NNLS uyumu bağımsız GEO örneklerinde 0.27–0.37 idi; bu yüzden uyum her raporda görünür.
-- **Bağımsız atlas kontrolü:** paket `atlas_reference` tanımlıysa (şu an GBM / Ivy GAP), tahmin edilen zonların referans gen ortalamaları atlas yapılarıyla z-skor korelasyonuna sokulur; diagonal ortalama ve top-1 eşleşme raporlanır. Zon marker genleri dışlanır; sentetik veride çalıştırılmaz. Eski üründe dört GSE237183 kesitinde diagonal ort. 0.21, top-1 0.45 idi (bir kesitte −0.09) — olumsuz sonuçlar saklanmaz.
+1. **Görülmemiş perturbasyon:** hedef gen/ilaç tümüyle testte tutulur.
+2. **Görülmemiş bağlam:** hücre hattı, donör veya deney bağlamı tümüyle testte tutulur.
+3. **Çapraz çalışma/platform:** mümkünse kaynak çalışma veya assay platformu dışarıda tutulur.
+4. **Görülmemiş kombinasyon:** kombinasyon perturbasyonları yalnızca iddia ayrı tanımlanırsa değerlendirilir.
 
-## 3. Metrik eşikleri (Faz 1 önerisi)
+Rastgele hücre bölmesi genelleme kanıtı değildir. Split ve test metriği model karşılaştırmasına başlamadan sabitlenir. Gen seçimi, normalizasyon, hiperparametre, kalibrasyon ve eşik seçimi test etiketlerine bakmadan eğitim verisinde yapılır.
 
-Bu eşikler **bilim kurulu onayına** tabidir; hastalık paketi bazında değişebilir.
+## 4. Baseline'lar ve aday modeller
 
-| Metrik | Minimum | Hedef | Not |
-|---|---|---|---|
-| Pseudospot JSD (ortalama) | < 0.20 | < 0.12 | Düşük daha iyi |
-| Pseudospot Pearson (baskın tip) | > 0.75 | > 0.85 | |
-| Hücre tipi F1 (makro) | > 0.65 | > 0.80 | |
-| Held-out ARI | > 0.35 | > 0.55 | Annotasyon varsa |
-| Marker enrichment AUROC | > 0.70 | > 0.85 | |
-| Kalibrasyon ECE | < 0.15 | < 0.08 | |
-| Stability (CV) | < 0.30 | < 0.15 | |
-| Örnek başına spot | ≥ 500 | ≥ 1.500 | Kalite eşiği |
-| Bağımsız çalışma | ≥ 3 | ≥ 5 | Paket kapsamı |
+Her görevde en az:
 
-**Kapı kuralı:** Bir hastalık paketi, tüm "minimum"ları geçmeden `status: validated` olamaz. UI'da `beta` etiketiyle ve belirgin uyarıyla gösterilir.
+- değişiklik yok / kontrol profili baseline'ı;
+- eşleşen ortalama perturbasyon yanıtı;
+- basit doğrusal veya additif model;
+- uygun yayınlanmış yöntemler (ör. GEARS, CPA veya güncel adaylar).
 
-## 4. Benchmark veri setleri (aday havuz)
+Karmaşık GNN, foundation ya da generatif model yalnızca baselinelara karşı aynı veri bölmesi ve metriklerle katkı sınanırsa tutulur. Mimarinin yeniliği biyolojik doğruluk kanıtı değildir.
 
-> Lisans ve erişim koşulları her veri seti için ayrıca kaydedilecek. Aşağıdakiler **aday**dır; indirme/doğrulama yapılmadan "kullanıldı" denmez.
+## 5. Ölçümler
 
-| Hastalık | Spatial adayları | scRNA-seq referansı | Not |
-|---|---|---|---|
-| Meme | 10x Visium breast cancer; HTAN breast | Tabula Sapiens, HCA, TCGA-derived | En olgun veri |
-| Akciğer | 10x Visium lung cancer; HTAN lung | Human Lung Cell Atlas | |
-| Kolorektal | 10x Visium colorectal; HTAN colon | Tabula Sapiens, HCA | |
-| Prostat | Visium prostate çalışmaları; HTAN prostate | Tabula Sapiens, HCA | Veri daha sınırlı |
-| Melanom | HTAN melanoma; GEO Visium | HCA, melanoma scRNA-seq | |
-| GBM | 10x Visium GBM; GSE237183/GSE331374 (eski repodan) | GBM scRNA-seq atlasları | Eski ürünle kıyaslanabilir |
+Birden fazla tamamlayıcı ölçüm raporlanır:
 
-Ek kaynaklar: GEO, ArrayExpress, HTAN Data Portal, 10x Genomics public datasets, Human Cell Atlas, Tabula Sapiens.
+- hücre/perturbasyon yanıt dağılımı için uygun kalibrasyon ve dağılım uyumu;
+- perturbasyon etkisi için etki-korelasyonu ve gen düzeyinde sıralama;
+- önceden belirlenmiş diferansiyel genlerde precision/recall veya top-k örtüşmesi;
+- yolak/işlev düzeyi tutarlılık — keşifsel ve bağımsız biyolojik kanıt yerine geçmez;
+- perturbasyon bazında skorlar, örnek desteği, belirsizlik aralıkları ve başarısız bağlamlar;
+- compute maliyeti ve baselinelara göre fark.
 
-## 5. Referans veri yönetimi
+Tek bir bütünleştirilmiş ortalama; zayıf sınıfları, başarısız bağlamları veya dataset heterojenliğini gizleyemez. Metrik, split, kapsam ve başarı eşiği koşu öncesi kayıt altına alınır.
 
-- Her referans için: kaynak URL, lisans, indirme tarihi, dosya hash'i, örnek sayısı, gen sayısı, hücre tipi etiketleri.
-- `packages/disease-packs/references.yaml` (planlanan) içinde sürüm lenir.
-- Aynı gen sembolü uzayına projeksiyon; eksik genler raporlanır.
-- Batch etkisi: hastalık/çalışma bazında ayrı değerlendirme; harmonizasyon yöntemi belgelenir.
+## 6. İlerleme kapıları
 
-## 6. Model kartı şablonu
+### A — Veri ve benchmark çalışıyor
 
-Her model/paket sürümü için:
+Küçük, lisansı uygun public dataset tekrarlanabilir biçimde okunur; etiketler, kontroller, split ve baseline'lar doğrulanır.
 
-```yaml
-model: topiome-deconv-nnls
-version: 0.1.0
-trained_on: []            # eğitim yoksa boş
-validated_on: []          # veri setleri + sürüm
-metrics:
-  jsd: null
-  pearson: null
-  f1: null
-intended_use: "RUO; hücre kompozisyonu keşfi"
-limitations:
-  - "Düşük hücreli spotlarda güvenilmez"
-  - "Referans atlas kapsamı dışındaki tipleri ayırt edemez"
-  - "Klinik kullanım için değildir"
-```
+### B — Hesaplamalı sinyal
 
-## 7. Benchmark çalıştırma
+Aday yöntem, önceden belirlenmiş görülmemiş-perturbasyon veya bağlam testinde ilgili baselineları birden fazla bağımsız dataset üzerinde tekrarlanabilir biçimde geçer. Başarı yalnız bazı perturbasyonlarda görülüyorsa kullanım kapsamı o alt kümeyle sınırlanır.
 
-```bash
-cd apps/api
-uv run python -m analysis.benchmark --pack breast --dataset synthetic --out ../../data/benchmarks/breast
-```
+### C — Prospektif bilimsel fayda
 
-Çıktı: `metrics.json`, `report.html`, `run.log`, `manifest.json` (commit, sürüm, parametre).
+Model tahminleri deneyden önce dondurulur. Bağımsız deney ortağı, seçilen perturbasyonlar için kontrol ve sonuçları ölçer. Model, random/mean ve uzman seçimi gibi uygun alternatiflerle karşılaştırılır. Sonuç modeli güncellemek için kullanılsa bile sonraki tur ayrı tutulur.
 
-## 8. Yayın öncesi kontrol listesi
+### D — Ürün kararı
 
-- [ ] Veri lisansı kontrol edildi
-- [ ] En az 3 bağımsız çalışma
-- [ ] Pseudospot + held-out metrikleri eşik üstü
-- [ ] Kalibrasyon raporlandı
-- [ ] Marker enrichment doğrulandı
-- [ ] Uzman spot-check yapıldı
-- [ ] Model card yazıldı
-- [ ] Sınırlamalar UI ve raporda görünüyor
-- [ ] RUO uyarısı her yerde
-- [ ] Versiyonlar (pack, pipeline, referans, commit) kaydedildi
-- [ ] Bilim kurulu onayı
+Bilimsel katkı, alıcının deney seçimini iyileştirdiği ve gerçek satın alma ihtiyacının doğrulandığı gösterilirse ürünleşme incelenir. Benchmark liderliği tek başına pazar veya şirket kanıtı değildir.
 
-## 9. Açık bilim ve tekrarlanabilirlik
+## 7. Karar kuralı
 
-- Benchmark kodu ve sentetik veri üretimi açık; gerçek hasta verisi açık değil.
-- Yayınlarda kullanılan parametreler ve sürümler ek olarak paylaşılır.
-- "Topiome ile üretildi" ifadesi için sürüm numarası zorunlu.
+- Baseline'lar geçilmezse model karmaşıklığı ve özellik kapsamı artırılmaz; bilimsel hedef/veri yeniden incelenir.
+- Performans yalnız in-distribution ise ürün iddiası ve hedef kapsamı buna göre daraltılır.
+- Public holdout geçilse bile bağımsız deney olmadan “deney sonucu tahmin eder” veya “deney sayısını azaltır” iddiası kullanılmaz.
+- Herhangi bir doğruluk iddiası RUO sınırlarını aşamaz.
 
-## 10. Uygulanan doğrulamalar (2026-11-06)
+## 8. Veri ve raporlama izi
 
-### Meme — Wu et al. 2021 domain modeli
+Her koşuda veri source ID/hash/lisans, perturbasyon tanımı, bağlam, kontrol, filtre ve normalizasyon, split, baseline, metrik, kod commit'i, ortam, parametreler, model hash'i ve sınırlar saklanır. Ham veri git'e veya demo'ya konmaz.
 
-- **Split:** hasta düzeyi; eğitim 1142243F, 1160920F, CID4290, CID44971; test CID4465, CID4535. Test hastaları referans, gen seçimi, epoch seçimi ve kalibrasyonda kullanılmadı.
-- **Model:** `breast_domain_gnn_v1` v1.0.0, 2 katman GraphSAGE (6-NN), NumPy çıkarım.
-- **Held-out pooled (2.235 spot):**
+## 9. Araştırma kaynakları
 
-| Model | Accuracy | Macro-F1 | ARI | ECE |
-|---|---:|---:|---:|---:|
-| GNN | 0.770 | 0.446 | 0.260 | 0.098 |
-| MLP (grafsız) | 0.739 | 0.386 | 0.191 | 0.136 |
-| Topiome baseline | 0.325 | 0.210 | 0.011 | — |
-| Always tumor | 0.856 | 0.231 | 0.000 | — |
+- Arc Virtual Cell Atlas: <https://arcinstitute.org/tools/virtualcellatlas> — atlas bileşenleri ve lisansları dataset bazında incelenir; Arc VCC 2025 ve Tahoe-100M sayfada CC0 olarak listeleniyor.
+- Wei et al., *Benchmarking algorithms for generalizable single-cell perturbation response prediction*, Nature Methods (2026): <https://www.nature.com/articles/s41592-025-02980-0> — 27 yöntemi ve 29 dataset'i birden çok genelleme senaryosunda değerlendiriyor.
+- *Deep-learning perturbation models can outperform baselines on calibrated metrics*, Nature Biotechnology (2026): <https://www.nature.com/articles/s41587-026-03307-w> — sonuçların metrik/kalibrasyon seçimine duyarlı olduğuna dair karşı kanıt ve güncel yöntemler.
+- Eski spatial-transkriptomik validasyonları: `docs/legacy/spatial/validation/`; yeni ürünün kanıtı değildir.
 
-- **Kapı:** ARI 0.260 < 0.35 minimum; Macro-F1 0.446 < 0.65 minimum → **breast pack beta**, `validated` değil.
-- **Sınır:** tek çalışma/tek merkez, 6 hasta; test seti tümör ağırlıklı; nadir sınıflarda az spot. Ayrıntı: `docs/validation/breast-wu2021.md`.
+## 10. İlk fizibilite çalışması — Arc VCC 2025 PIE aggregate arrays
 
-### GBM — GSE331374 gerçek veri + Ivy GAP
+**Durum:** başlangıç baseline'ı çalıştırıldı; bu Topiome model eğitimi veya doğrulaması değildir.
 
-- 2.930 doku spotu, 36.601 gen, 2.727 QC-pass; referans/domain modeli yok, marker-score baseline.
-- Yöntem uyumu 0.656; Ivy GAP diagonal ort. **−0.179**, top-1 **0.0** (4 zon).
-- **Kapı:** zon-atlas uyumu yok → **GBM pack beta**; eğitilmiş GBM referansı/domain modeli gelene kadar zon etiketi iddiası yok. Ayrıntı: `docs/validation/gbm-gse331374.md`.
-
-### Sentetik benchmark (altı paket)
-
-`docs/validation/benchmarks/synthetic-v0.1.0-metrics.json` — 1.200 spot; altı paket minimum ve hedef pseudospot eşiklerini geçti (breast JSD 0.099/r 0.862/ARI 0.634; GBM JSD 0.076/r 0.851/ARI 0.602). Bu yalnızca matematiksel geri kazanım testidir; gerçek veri/clinical validation değildir. Yeniden üretmek için benchmark CLI'yi çalıştırın (`data/benchmarks/` çıktısı git'e girmez).
+- Girdi: `data/perturbation/raw/arc-vcc-2025-pie/`; Arc VCC 2025 H1 hESC CRISPRi Perturb-seq verisinden PIE ile üretilmiş aggregate log2 fold-change tabloları.
+- Bölme: `ARC_H1` 146 perturbasyon hedefi → `ARC_H1_VAL` 44 görülmemiş hedef. Hedef örtüşmesi 0. Her ikisi aynı H1 hücre hattıdır; validation context adının farklı olması ayrı biyolojik bağlam anlamına gelmez.
+- Ölçüm: 44 hedef × toplam 472.187 test edilmiş perturbasyon-gen etkisi. Pooled metriklerin yanında her hedef eşit ağırlıklı RMSE/MAE, hedef başına gen korelasyonu ve top-50 mutlak etki örtüşmesi raporlandı.
+- Baseline: tüm etkileri sıfır tahmin etmek pooled RMSE 0.2445, eşit-ağırlıklı hedef RMSE 0.1909 verdi. Eğitim perturbasyonlarının gen başına ortalama etkisini tahmin etmek pooled RMSE 0.2220, eşit-ağırlıklı hedef RMSE 0.1818, medyan hedef başına gen korelasyonu 0.2113 ve ortalama top-50 örtüşme 0.2064 verdi.
+- Gen ortalaması pooled RMSE'yi 9.2%, hedefleri eşit ağırlıklı RMSE'yi 4.8% düşürdü. Hedef bazında bootstrap delta için yüzde 95 percentile aralığı −0.0183 ile −0.0012 log2-FC RMSE; bootstrap birimi 44 validation perturbasyon hedefidir. Bu, yalnız bu paneldeki hedefler arası betimleyici belirsizliktir; bağımsız deney/çalışma varyansını ölçmez.
+- Ortalama gen etkisi hedef kimliğine özgü değil. Sonuç ortak gen/assay örüntüsünün yararlı olabileceğini düşündürür; model katkısı, biyolojik mekanizma, deney faydası veya diğer bağlamlara genelleme kanıtı değildir.
+- Çıktı: `data/perturbation/processed/vcc-pie-baseline-metrics.json`; tekrarlanabilir komut: `python scripts/perturbation/benchmark_vcc_pie_baselines.py`.
+- Sınırlar: hücre düzeyinde çıktı tahmin edilmedi; tek hücre dağılımı veya yeni hücre bağlamı test edilmedi; 44 public validation perturbasyonu bağımsız deney/çalışma değildir. Bu sonuç ürün doğruluğu iddiası için kullanılmaz.

@@ -9,7 +9,9 @@ from fastapi.responses import JSONResponse
 from .config import settings
 from .db import init_db
 from .routers import (
+    api_keys,
     auth,
+    billing,
     compare,
     dashboard,
     disease_packs,
@@ -59,6 +61,21 @@ app.add_middleware(
 
 
 @app.middleware("http")
+async def security_headers_middleware(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    if not settings.is_dev:
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; frame-ancestors 'none';"
+        )
+    return response
+
+
+@app.middleware("http")
 async def origin_check(request: Request, call_next):
     if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
         origin = request.headers.get("origin")
@@ -77,6 +94,8 @@ app.include_router(samples.router, prefix="/api/v1")
 app.include_router(compare.router, prefix="/api/v1")
 app.include_router(runs.router, prefix="/api/v1")
 app.include_router(org.router, prefix="/api/v1")
+app.include_router(api_keys.router, prefix="/api/v1")
+app.include_router(billing.router, prefix="/api/v1")
 
 
 @app.get("/")

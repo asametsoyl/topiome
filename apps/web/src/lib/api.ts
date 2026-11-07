@@ -55,7 +55,7 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
 
 export const apiClient = {
   me: () => api<import("./types").Me>("/auth/me"),
-  login: (body: { email: string; password: string }) =>
+  login: (body: { email: string; password: string; totp_code?: string }) =>
     api<import("./types").Me>("/auth/login", { method: "POST", body }),
   register: (body: { name: string; email: string; password: string; org_name?: string }) =>
     api<import("./types").Me>("/auth/register", { method: "POST", body }),
@@ -103,6 +103,14 @@ export const apiClient = {
     ),
   results: (id: string) =>
     api<{ run_id: string; payload: import("./types").ResultPayload }>(`/runs/${id}/results`),
+  geneExpression: (id: string, gene: string) =>
+    api<import("./types").GeneExpressionLayer>(`/runs/${id}/expression?${new URLSearchParams({ gene })}`),
+  exportRoi: (id: string, barcodes: string[]) =>
+    api<string>(`/runs/${id}/roi-export`, { method: "POST", body: { barcodes }, raw: true }),
+  roiGenes: (id: string, barcodes: string[]) =>
+    api<import("./types").RoiGeneResult>(`/runs/${id}/roi-genes`, { method: "POST", body: { barcodes } }),
+  logMapExport: (id: string, body: { width: number; height: number; mode: string }) =>
+    api<{ ok: boolean }>(`/runs/${id}/map-export`, { method: "POST", body }),
   retryRun: (id: string) => api<import("./types").Run>(`/runs/${id}/retry`, { method: "POST" }),
   cancelRun: (id: string) =>
     api<{ ok: boolean }>(`/runs/${id}/cancel`, { method: "POST" }),
@@ -114,4 +122,19 @@ export const apiClient = {
   auditLogs: () => api<import("./types").AuditLog[]>("/org/audit-logs"),
   updateOrg: (body: { name: string }) =>
     api<import("./types").Organization>("/org", { method: "PATCH", body }),
+  invitations: () => api<import("./types").Invitation[]>("/org/invitations"),
+  createInvitation: (body: { email: string; role: "admin" | "analyst" | "viewer" }) =>
+    api<import("./types").Invitation>("/org/invitations", { method: "POST", body }),
+  revokeInvitation: (id: string) =>
+    api<{ ok: boolean }>(`/org/invitations/${id}`, { method: "DELETE" }),
+  acceptInvitation: (body: { token: string; name?: string; password?: string; totp_code?: string }) =>
+    api<import("./types").Me>("/auth/invitations/accept", { method: "POST", body }),
+  billingStatus: () => api<import("./types").BillingStatus>("/billing/status"),
+  createCheckout: (plan: "lab" | "institution") =>
+    api<{ checkout_url: string }>("/billing/checkout", { method: "POST", body: { plan } }),
+  mfaSetup: () => api<import("./types").MfaSetup>("/auth/mfa/setup", { method: "POST" }),
+  mfaEnable: (code: string) =>
+    api<import("./types").MfaEnabled>("/auth/mfa/enable", { method: "POST", body: { code } }),
+  mfaDisable: (password: string, code: string) =>
+    api<{ ok: boolean }>("/auth/mfa/disable", { method: "POST", body: { password, code } }),
 };

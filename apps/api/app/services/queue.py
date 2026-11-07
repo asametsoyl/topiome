@@ -29,9 +29,16 @@ def enqueue(run_id: str, background: BackgroundTasks) -> None:
 
 
 def next_queued_run_id() -> str | None:
+    now = datetime.now(UTC)
     with SessionLocal() as db:
         return db.scalar(
-            select(Run.id).where(Run.status == "queued").order_by(Run.created_at).limit(1)
+            select(Run.id)
+            .where(
+                Run.status == "queued",
+                (Run.next_attempt_at.is_(None)) | (Run.next_attempt_at <= now),
+            )
+            .order_by(Run.created_at)
+            .limit(1)
         )
 
 

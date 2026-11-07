@@ -25,7 +25,17 @@ function formatQ(value: number | null) {
 
 /** Ligand–receptor results (ported from Glio-Cartography's signaling view). */
 export function CommunicationView({ payload }: { payload: ResultPayload }) {
-  const interactions: Interaction[] = payload.communication ?? [];
+  const interactions: Interaction[] = payload.summary.synthetic
+    ? (payload.communication ?? []).map((item) => ({
+        ...item,
+        tested: false,
+        significant: false,
+        score: null,
+        p_value: null,
+        q_value: null,
+        missing: ["synthetic demo data"],
+      }))
+    : (payload.communication ?? []);
   if (interactions.length === 0) {
     return (
       <EmptyState
@@ -36,16 +46,17 @@ export function CommunicationView({ payload }: { payload: ResultPayload }) {
   }
   const maxScore = Math.max(...interactions.map((item) => item.score ?? 0), 1e-9);
   const significant = interactions.filter((item) => item.significant).length;
+  const tested = interactions.filter((item) => item.tested).length;
 
   return (
     <div className="grid gap-5 xl:grid-cols-[1.6fr_0.7fr]">
       <Card>
         <CardHeader
           title="Ligand–receptor co-localization"
-          description="Curated pairs from the disease pack, scored on this sample."
+          description="Curated ligand–receptor pairs scored on this sample; tested spot contributions are available as map layers."
           action={
             <Badge variant={significant ? "teal" : "outline"}>
-              {significant}/{interactions.length} significant
+              {tested ? `${significant}/${tested} significant · ${tested}/${interactions.length} tested` : `0/${interactions.length} tested`}
             </Badge>
           }
         />
@@ -53,7 +64,7 @@ export function CommunicationView({ payload }: { payload: ResultPayload }) {
           <table className="w-full min-w-[560px] text-left text-[11px]">
             <thead className="border-b border-line font-mono text-[9px] uppercase tracking-[0.12em] text-slate">
               <tr>
-                <th className="px-4 py-2.5 font-normal">Pair</th>
+                <th className="px-4 py-2.5 font-normal">Pair / pack context</th>
                 <th className="px-3 py-2.5 font-normal">Sender → receiver</th>
                 <th className="px-3 py-2.5 font-normal">Score</th>
                 <th className="px-3 py-2.5 font-normal">q (BH)</th>
@@ -104,7 +115,7 @@ export function CommunicationView({ payload }: { payload: ResultPayload }) {
                     </>
                   ) : (
                     <td colSpan={3} className="px-3 py-2.5 text-slate">
-                      Not tested — missing {item.missing.join(", ")}
+            Not tested — {item.missing.includes("synthetic demo data") ? "synthetic demo data" : `missing ${item.missing.join(", ")}`}
                     </td>
                   )}
                 </tr>
@@ -120,6 +131,10 @@ export function CommunicationView({ payload }: { payload: ResultPayload }) {
           <p>
             The score adds same-spot and neighbour co-expression of the ligand (weighted by sender
             abundance) and the receptor (weighted by receiver abundance).
+          </p>
+          <p>
+            Pathway context is the disease-pack category for each curated pair. It is not a pathway
+            activity or downstream signaling measurement.
           </p>
           <p>
             q-values come from a spatial permutation test — receiver signal is shuffled across

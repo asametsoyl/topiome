@@ -1,7 +1,9 @@
 # API — Topiome v1
 
+> **Legacy API (2026-11-07):** Bu uçlar eski spatial workspace içindir; yeni perturbasyon araştırma akışını temsil etmez ve bu akış için henüz API/model yoktur.
+
 Base URL: `http://localhost:8000/api/v1` (dev) · `https://api.topiome.com/api/v1` (prod)
-Auth: `topiome_session` httpOnly cookie (web) veya `Authorization: Bearer <api_key>` (Faz 2).
+Auth: `topiome_session` httpOnly cookie (web), or `X-API-Key: topiome_live_…` / `Authorization: Bearer topiome_live_…`. API keys have analyst permissions and cannot manage workspace admins or billing.
 
 ## 1. Genel kurallar
 
@@ -17,6 +19,10 @@ Auth: `topiome_session` httpOnly cookie (web) veya `Authorization: Bearer <api_k
 |---|---|---|
 | POST | `/auth/register` | `{name, email, password, org_name}` → user + org |
 | POST | `/auth/login` | `{email, password}` → cookie |
+| POST | `/auth/invitations/accept` | invite token; creates account or joins an existing account |
+| POST | `/auth/mfa/setup` | create TOTP enrollment secret and QR SVG |
+| POST | `/auth/mfa/enable` | verify TOTP code and return one-time recovery codes |
+| POST | `/auth/mfa/disable` | verify password and TOTP before disabling MFA |
 | POST | `/auth/logout` | cookie sil |
 | GET | `/auth/me` | kullanıcı + org + rol |
 | POST | `/auth/demo` | demo hesabına giriş (feature flag) |
@@ -30,9 +36,14 @@ Auth: `topiome_session` httpOnly cookie (web) veya `Authorization: Bearer <api_k
 | GET | `/org` | mevcut org |
 | PATCH | `/org` | ad, slug, ayarlar |
 | GET | `/org/members` | üyeler |
-| POST | `/org/invitations` | davet |
+| PATCH | `/org/members/{id}` | rol güncelle (son owner düşürülemez) |
 | DELETE | `/org/members/{id}` | üye çıkar |
+| GET/POST | `/org/invitations` | pending invites / yeni davet |
+| DELETE | `/org/invitations/{id}` | daveti iptal et |
 | GET | `/org/audit-logs` | audit kayıtları |
+| GET | `/api-keys` | aktif anahtarları listele (secret gösterilmez) |
+| POST | `/api-keys` | anahtar oluştur; secret yalnızca yanıtta bir kez görünür |
+| DELETE | `/api-keys/{id}` | anahtarı iptal et |
 
 ## 4. Hastalık paketleri
 
@@ -76,6 +87,10 @@ Yükleme biçimleri: `filtered_feature_bc_matrix.h5`; veya `matrix.mtx(.gz)` + `
 | POST | `/runs/{id}/cancel` | iptal |
 | POST | `/runs/{id}/retry` | yeniden dene |
 | GET | `/runs/{id}/results` | özet sonuçlar |
+| GET | `/runs/{id}/expression?gene=TP53` | gerçek Visium tek-gen log1p(CP10K) katmanı; sentetikte yok |
+| POST | `/runs/{id}/roi-genes` | `{"barcodes":[...]}` QC-pass ROI içi/dışı betimleyici gen farkları; p-value/FDR içermez, en az 10 QC-pass spot/bölge |
+| POST | `/runs/{id}/roi-export` | ROI CSV; yalnız onaylı rapor sonrası, audit'li |
+| POST | `/runs/{id}/map-export` | PNG export audit kaydı; yalnız onaylı rapor sonrası |
 | GET | `/runs/compare?a=&b=` | iki başarılı run'ı yan yana (kayıtlı sonuçtan; yeniden analiz yok). Başka org → 404, bitmemiş run → 409, aynı run → 400; paket/sürüm farkında `warnings` |
 | GET | `/runs/{id}/artifacts` | dosya listesi |
 | GET | `/runs/{id}/report` | HTML rapor |
@@ -88,14 +103,13 @@ Yükleme biçimleri: `filtered_feature_bc_matrix.h5`; veya `matrix.mtx(.gz)` + `
 | GET | `/dashboard/summary` | proje/örnek/run sayıları, son aktiviteler |
 | GET | `/dashboard/activity` | son 20 olay |
 
-## 9. Faturalama (Faz 2)
+## 9. Faturalama
 
 | Method | Path | Açıklama |
 |---|---|---|
-| GET | `/billing/plans` | planlar |
-| GET | `/billing/subscription` | mevcut abonelik |
+| GET | `/billing/status` | mevcut plan, abonelik ve kullanım limitleri |
 | POST | `/billing/checkout` | Stripe checkout session |
-| POST | `/billing/webhook` | Stripe webhook (imzalı) |
+| POST | `/billing/webhook` | Stripe webhook (imzalı, HMAC doğrulamalı) |
 
 ## 10. Sağlık
 

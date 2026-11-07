@@ -4,16 +4,17 @@ import json
 import tarfile
 import traceback
 import zipfile
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from analysis import generate_demo_dataset, load_visium, run_pipeline
 from analysis.io import discover_visium
 from sqlalchemy import select, update
 
+from ..config import settings
 from ..db import SessionLocal
 from ..disease_packs import get_pack
-from ..models import Report, Result, Run, Sample
+from ..models import Report, Result, Run, Sample, User
 from ..references import domain_model_for, reference_genes, signatures_for
 from .provenance import build_provenance
 from .report import build_report
@@ -65,7 +66,7 @@ def prepare_visium_dir(sample: Sample) -> Path | None:
     if not sample.files:
         return None
     raw_key = sample_raw_dir(sample)
-    base = storage.path(raw_key)
+    base = storage.materialize_prefix(raw_key)
     if not base.exists():
         return None
     for archive in sorted(base.iterdir()):
@@ -156,6 +157,7 @@ def execute_run(run_id: str) -> None:
             started_at=datetime.now(UTC),
             error_code=None,
             error_message=None,
+            next_attempt_at=None,
         )
         db.commit()
         if not started:
@@ -178,7 +180,12 @@ def execute_run(run_id: str) -> None:
                 sample_id=sample.id,
                 keep_genes=pack_genes(pack) | reference_genes(pack),
             )
+            detected_platform = dataset.metadata.get("platform")
             dataset.metadata.update(sample.sample_metadata or {})
+            if detected_platform == "visium_hd":
+                # The assay is inferred from the selected Space Ranger bin, not
+                # the generic upload form's default platform value.
+                dataset.metadata["platform"] = detected_platform
             if shipped_reference is not None:
                 signatures = shipped_reference.table
         else:
@@ -277,6 +284,19 @@ def execute_run(run_id: str) -> None:
         ):
             raise RunCancelled(run.id)
         db.commit()
+
+        if run.created_by:
+            user = db.get(User, run.created_by)
+            if user and user.email:
+                from .email import send_run_finished
+
+                send_run_finished(
+                    to=user.email,
+                    run_id=run.id,
+                    pack=run.disease_pack,
+                    sample_name=sample.name if sample else "sample",
+                    ok=True,
+                )
     except RunCancelled:
         db.rollback()
         run = db.get(Run, run_id)
@@ -288,16 +308,41 @@ def execute_run(run_id: str) -> None:
         db.rollback()
         run = db.get(Run, run_id)
         if run is not None and run.status != "cancelled":
-            run.status = "failed"
-            run.stage = "failed"
-            run.error_code = (
+            error_code = (
                 "invalid_input"
                 if isinstance(exc, (ValueError, FileNotFoundError, zipfile.BadZipFile))
                 else "pipeline_error"
             )
-            run.error_message = str(exc)[:1000]
-            run.finished_at = datetime.now(UTC)
-            db.commit()
+            # Automatic retry with exponential backoff on transient pipeline errors
+            if error_code == "pipeline_error" and run.attempts + 1 < run.max_attempts:
+                run.attempts += 1
+                delay = settings.retry_base_seconds * (2 ** (run.attempts - 1))
+                run.status = "queued"
+                run.stage = f"retry_pending_{run.attempts}"
+                run.next_attempt_at = datetime.now(UTC) + timedelta(seconds=delay)
+                run.error_code = error_code
+                run.error_message = f"Attempt {run.attempts} failed: {exc!s}"[:1000]
+                db.commit()
+            else:
+                run.status = "failed"
+                run.stage = "failed"
+                run.error_code = error_code
+                run.error_message = str(exc)[:1000]
+                run.finished_at = datetime.now(UTC)
+                db.commit()
+                if run.created_by:
+                    user = db.get(User, run.created_by)
+                    if user and user.email:
+                        from .email import send_run_finished
+
+                        send_run_finished(
+                            to=user.email,
+                            run_id=run.id,
+                            pack=run.disease_pack,
+                            sample_name=sample.name if sample else "sample",
+                            ok=False,
+                            detail=run.error_message,
+                        )
             try:
                 storage.save_bytes(
                     f"runs/{run.id}/error.log",

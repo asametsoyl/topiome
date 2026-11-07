@@ -43,7 +43,7 @@ def software_commit() -> str:
         return UNVERSIONED
     try:
         dirty = subprocess.run(
-            ["git", "-C", str(ROOT), "status", "--porcelain", "--untracked-files=no"],
+            ["git", "-C", str(ROOT), "status", "--porcelain", "--untracked-files=all"],
             capture_output=True,
             text=True,
             timeout=3,

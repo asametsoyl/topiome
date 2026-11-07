@@ -11,6 +11,7 @@
     "start": "npm --prefix apps/web run start",
     "seed": "cd apps/api && uv run python -m app.seed",
     "test:api": "cd apps/api && uv run --extra dev pytest",
+    "test:e2e": "npm --prefix apps/web run e2e",
     "typecheck": "npm --prefix apps/web run typecheck",
     "setup": "bash scripts/setup.sh",
     "test:analysis": "cd apps/api && uv run --extra dev pytest ../../packages/analysis/tests",

@@ -1,5 +1,7 @@
 # Yol Haritası — Topiome
 
+> **Legacy plan (2026-11-07):** Aşağıdaki fazlar eski spatial ürün içindir ve yeni yönün yol haritası değildir. Güncel ilk aşama: perturbasyon veri envanteri, lisans/metadata kontrolü ve held-out baseline benchmark'ı (`STATUS.md`).
+
 > "Tam ürün" hedefi uzun soluklu. Aşağıdaki aşamalar birbirine bağımlı; her aşama çalışan ve test edilmiş bir dilimle kapanır.
 
 ## Faz 0 — Karar ve iskelet ✅ (2026-11-06)

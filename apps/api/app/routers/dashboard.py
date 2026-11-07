@@ -14,36 +14,68 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 @router.get("/summary", response_model=DashboardSummary)
 def summary(auth: CurrentAuth, db: DbSession) -> DashboardSummary:
     org_id = auth.org.id
+    active_projects = select(Project.id).where(
+        Project.org_id == org_id,
+        Project.archived.is_(False),
+    )
 
-    def count(model) -> int:
-        return int(db.scalar(select(func.count(model.id)).where(model.org_id == org_id)) or 0)
+    projects = int(
+        db.scalar(select(func.count(Project.id)).where(Project.id.in_(active_projects))) or 0
+    )
+    samples = int(
+        db.scalar(
+            select(func.count(Sample.id)).where(
+                Sample.org_id == org_id,
+                Sample.project_id.in_(active_projects),
+                Sample.archived.is_(False),
+            )
+        )
+        or 0
+    )
+    runs = int(
+        db.scalar(
+            select(func.count(Run.id)).where(Run.org_id == org_id, Run.project_id.in_(active_projects))
+        )
+        or 0
+    )
 
-    projects = count(Project)
-    samples = count(Sample)
-    runs = count(Run)
     completed = int(
         db.scalar(
-            select(func.count(Run.id)).where(Run.org_id == org_id, Run.status == "succeeded")
+            select(func.count(Run.id)).where(
+                Run.org_id == org_id,
+                Run.project_id.in_(active_projects),
+                Run.status == "succeeded",
+            )
         )
         or 0
     )
     failed = int(
         db.scalar(
-            select(func.count(Run.id)).where(Run.org_id == org_id, Run.status == "failed")
+            select(func.count(Run.id)).where(
+                Run.org_id == org_id,
+                Run.project_id.in_(active_projects),
+                Run.status == "failed",
+            )
         )
         or 0
     )
     spots = int(
         db.scalar(
             select(func.coalesce(func.sum(Sample.spot_count), 0)).where(
-                Sample.org_id == org_id
+                Sample.org_id == org_id,
+                Sample.project_id.in_(active_projects),
+                Sample.archived.is_(False),
             )
         )
         or 0
     )
     recent = list(
         db.scalars(
-            select(Run).where(Run.org_id == org_id).order_by(desc(Run.created_at)).limit(6)
+            select(Run)
+            .join(Project, Run.project_id == Project.id)
+            .where(Run.org_id == org_id, Project.archived.is_(False))
+            .order_by(desc(Run.created_at))
+            .limit(6)
         )
     )
     return DashboardSummary(

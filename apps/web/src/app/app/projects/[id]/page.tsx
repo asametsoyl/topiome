@@ -6,6 +6,7 @@ import { useState } from "react";
 import {
   ArrowLeft,
   ArrowUpRight,
+  Archive,
   Boxes,
   ChevronRight,
   Dna,
@@ -69,10 +70,15 @@ export default function ProjectDetailPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [archiving, setArchiving] = useState(false);
 
   async function handleUpload(event: React.FormEvent) {
     event.preventDefault();
     if (!project) return;
+    if (files.length === 0) {
+      setFormError("Upload a real Visium dataset to create a sample.");
+      return;
+    }
     setFormError(null);
     setSubmitting(true);
     try {
@@ -92,12 +98,7 @@ export default function ProjectDetailPage() {
       for (const file of files) form.append("files", file);
 
       const sample = await apiClient.createSample(project.id, form);
-      toast(
-        files.length > 0
-          ? "Sample uploaded. Review the files, then run the pipeline."
-          : "Synthetic demo sample created. Launch a run to build the atlas.",
-        "success",
-      );
+      toast("Sample uploaded. Review the files, then run the pipeline.", "success");
       setUploadOpen(false);
       setSampleName("");
       setExternalId("");
@@ -109,6 +110,19 @@ export default function ProjectDetailPage() {
     } catch (err) {
       setFormError(errorMessage(err));
       setSubmitting(false);
+    }
+  }
+
+  async function archiveProject() {
+    if (!project || archiving) return;
+    setArchiving(true);
+    try {
+      await apiClient.archiveProject(project.id);
+      toast("Project archived.", "success");
+      router.push("/app/projects");
+    } catch (err) {
+      toast(errorMessage(err), "error");
+      setArchiving(false);
     }
   }
 
@@ -173,6 +187,12 @@ export default function ProjectDetailPage() {
               <UploadCloud className="size-4" />
               Add sample
             </Button>
+            {!project.archived ? (
+              <Button variant="secondary" onClick={() => void archiveProject()} loading={archiving}>
+                <Archive className="size-4" />
+                Archive project
+              </Button>
+            ) : null}
             <Badge variant={project.archived ? "outline" : "teal"}>
               {project.archived ? "Archived" : "Active"}
             </Badge>
@@ -229,7 +249,7 @@ export default function ProjectDetailPage() {
                 <EmptyState
                   compact
                   title="No samples yet"
-                  description="Upload Space Ranger files or create a synthetic demo sample to try the pipeline."
+                  description="Upload public or appropriately licensed Space Ranger files to begin an exploratory analysis."
                   action={
                     <Button size="sm" onClick={() => setUploadOpen(true)}>
                       <UploadCloud className="size-3.5" />
@@ -396,7 +416,7 @@ export default function ProjectDetailPage() {
           setFormError(null);
         }}
         title="Add a sample"
-        description="Upload 10x Visium Space Ranger output, or leave files empty to generate a synthetic demo sample."
+        description="Upload a real 10x Visium Space Ranger dataset. Public or properly licensed research data only."
         className="max-w-xl"
       >
         <form onSubmit={handleUpload} className="space-y-4">
@@ -423,7 +443,6 @@ export default function ProjectDetailPage() {
             <Field label="Platform">
               <Select value={platform} onChange={(event) => setPlatform(event.target.value)}>
                 <option value="visium">10x Visium</option>
-                <option value="demo">Synthetic demo</option>
                 <option value="other">Other / unknown</option>
               </Select>
             </Field>
@@ -437,15 +456,15 @@ export default function ProjectDetailPage() {
           </div>
 
           <Field
-            label="Visium files"
-            hint="Space Ranger output: filtered_feature_bc_matrix.h5 (or matrix.mtx + barcodes + features) and spatial/tissue_positions.csv — or the outs/ folder as one .zip / .tar.gz. Leave empty for synthetic data."
+            label="Visium / HD files"
+            hint="Space Ranger output: Visium matrix + tissue positions; Visium HD uses the square_016um binned output. Upload the outs/ folder as one .zip / .tar.gz. HD runs are limited to 12,000 in-tissue spots until tiled analysis is available."
           >
             <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-line bg-ink-3/60 px-4 py-6 text-center transition hover:border-acid/40 hover:bg-ink-3">
               <FileUp className="size-5 text-teal" />
               <span className="text-xs text-bone-dim">
                 {files.length > 0
                   ? `${files.length} file${files.length === 1 ? "" : "s"} selected`
-                  : "Choose files or drop a zip"}
+                  : "Choose a real dataset or drop a zip"}
               </span>
               {files.length > 0 ? (
                 <span className="max-w-full truncate font-mono text-[10px] text-slate">
@@ -456,7 +475,7 @@ export default function ProjectDetailPage() {
                 type="file"
                 multiple
                 className="sr-only"
-                accept=".h5,.mtx,.gz,.tsv,.csv,.json,.png,.zip,.tar,.tgz"
+                accept=".h5,.mtx,.gz,.tsv,.csv,.parquet,.json,.png,.zip,.tar,.tgz"
                 onChange={(event) => setFiles(Array.from(event.target.files ?? []))}
               />
             </label>
@@ -494,7 +513,7 @@ export default function ProjectDetailPage() {
               Cancel
             </Button>
             <Button type="submit" loading={submitting}>
-              {files.length > 0 ? "Upload sample" : "Create demo sample"}
+              Upload sample
             </Button>
           </div>
         </form>

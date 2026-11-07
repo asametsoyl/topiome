@@ -15,7 +15,7 @@ import type { Me } from "./types";
 interface AuthContextValue {
   me: Me | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<Me>;
+  login: (email: string, password: string, totpCode?: string) => Promise<Me>;
   register: (input: {
     name: string;
     email: string;
@@ -62,8 +62,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const data = await apiClient.login({ email, password });
+  const login = useCallback(async (email: string, password: string, totpCode?: string) => {
+    const data = await apiClient.login({ email, password, totp_code: totpCode || undefined });
     setMe(data);
     return data;
   }, []);

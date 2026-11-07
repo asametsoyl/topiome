@@ -7,80 +7,49 @@ export default function RuoPolicyPage() {
   return (
     <LegalPage
       title="Research Use Only policy"
-      updated="November 6, 2026"
-      intro="Topiome is a research tool. This policy defines the boundary between research use and clinical use, and the language we use to describe results."
+      updated="November 7, 2026"
+      intro="Topiome is developing computational research methods for predicting cellular responses to defined perturbations. The current research direction has not produced a validated prediction model."
     >
       <RuoNotice />
 
       <LegalSection title="1. Intended use">
         <p>
-          Topiome is intended for research use by scientists, bioinformaticians, and research
-          laboratories. It supports exploration of spatial transcriptomics data: cell-type
-          composition, spatial domain structure, target gene expression, and uncertainty.
+          Topiome's research direction is exploratory computational biology: evaluating whether models can predict measured cellular responses to genetic perturbations in defined experimental contexts.
         </p>
         <p>
-          Topiome is <strong className="text-bone">not</strong> intended for diagnosis,
-          prognosis, treatment selection, therapy monitoring, or clinical decision-making. It is
-          not a medical device and has not been cleared or approved by the FDA, EMA, TİTCK, or
-          any other regulator.
+          Topiome is not intended for diagnosis, prognosis, treatment selection, patient management, or clinical decision-making. No output is a therapeutic recommendation or evidence that an intervention will work in a person.
         </p>
       </LegalSection>
 
-      <LegalSection title="2. What results mean">
+      <LegalSection title="2. What computational predictions mean">
         <p>
-          Results are computational inferences from research data. Deconvolution estimates
-          composition from bulk spot expression; spatial domains are computational regions
-          labeled by marker scores; target scores are research prioritization signals, not
-          therapeutic recommendations.
+          A predicted response is a model estimate conditioned on its training data, perturbation, assay, time point, dose, and cell context. Public-data benchmark performance does not by itself demonstrate causal mechanism, transfer to a new biological system, or experimental utility.
         </p>
         <p>
-          Every result depends on data quality, reference atlas coverage, parameters, and the
-          validity of the disease pack. Results must be independently validated before being
-          used in any research decision, publication, or downstream study.
+          Prospective biological claims require independently generated experimental measurements. Until such validation exists, outputs must be treated as research hypotheses and not as established biology.
         </p>
       </LegalSection>
 
-      <LegalSection title="3. No clinical claims">
+      <LegalSection title="3. Validation status">
         <p>
-          You may not represent Topiome output as a diagnosis, a clinical finding, a treatment
-          recommendation, or a substitute for pathologist review. Marketing, publications, and
-          internal communications must retain the RUO qualifier and must not imply clinical
-          validation unless a separate written agreement and regulatory pathway exist.
+          Topiome has not yet trained or validated a perturbation-response prediction model. Research code, benchmark results, and future prototypes will be labeled with their evidence status and limitations. A held-out computational benchmark is not independent experimental validation.
         </p>
       </LegalSection>
 
-      <LegalSection title="4. Validation status">
-        <p>
-          Disease packs carry a status: <span className="font-mono text-teal">draft</span>,{" "}
-          <span className="font-mono text-teal">beta</span>,{" "}
-          <span className="font-mono text-teal">validated</span>, or{" "}
-          <span className="font-mono text-teal">deprecated</span>. Beta means the baseline runs
-          but validation is incomplete. Draft means the pack is under development. No pack is
-          clinically validated.
-        </p>
-        <p>
-          Synthetic benchmarks test numerical recovery against known ground truth. They do not
-          prove biological generalization or clinical utility.
-        </p>
-      </LegalSection>
-
-      <LegalSection title="5. User responsibilities">
+      <LegalSection title="4. User responsibilities">
         <ul className="list-disc space-y-2 pl-5">
-          <li>Confirm that you have the right to use the data you upload.</li>
-          <li>Obtain ethics approval and consent where required by your institution.</li>
-          <li>Do not upload identifiable patient data without an appropriate agreement.</li>
-          <li>Retain the RUO notice in shared reports and publications.</li>
-          <li>Independently validate any result before relying on it.</li>
+          <li>Use only data you are authorized to access and process.</li>
+          <li>Check the license and terms for each public dataset before reuse.</li>
+          <li>Do not use research outputs to make clinical or patient-level decisions.</li>
+          <li>Independently test any biological hypothesis before relying on it.</li>
+          <li>Retain the RUO notice when sharing Topiome research outputs.</li>
         </ul>
       </LegalSection>
 
-      <LegalSection title="6. Contact">
+      <LegalSection title="5. Contact">
         <p>
-          Questions about intended use or clinical partnerships:{" "}
-          <a href="mailto:hello@topiome.com" className="text-acid underline decoration-acid/30 underline-offset-2">
-            hello@topiome.com
-          </a>
-          .
+          Questions about intended use or research collaboration: {" "}
+          <a href="mailto:hello@topiome.com" className="text-acid underline decoration-acid/30 underline-offset-2">hello@topiome.com</a>.
         </p>
       </LegalSection>
     </LegalPage>

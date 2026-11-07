@@ -176,7 +176,7 @@ function ProjectsContent() {
           description={
             query
               ? "Try a different name, description, or disease pack."
-              : "Create a project to group samples and runs for a study. The demo workspace already includes one."
+              : "Create a project to group public or appropriately licensed research samples and runs."
           }
           action={
             query ? (

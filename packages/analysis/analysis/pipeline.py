@@ -23,7 +23,7 @@ from .targets import score_targets
 from .types import AnalysisResult, SpatialDataset
 from .uncertainty import composition_uncertainty
 
-PIPELINE_VERSION = "0.3.0-baseline"
+PIPELINE_VERSION = "0.4.0-spatial-signals"
 
 
 def _domain_name(domain_id: str, pack: dict) -> str:
@@ -198,16 +198,37 @@ def run_pipeline(
 
     communication: list[dict[str, Any]] = []
     if pack.get("ligand_receptor_pairs"):
-        communication = score_ligand_receptor(
-            norm_model,
-            composition_model,
-            coords_model,
-            domains_model,
-            pack["ligand_receptor_pairs"],
-            k=int(params.get("k_neighbors", 6)),
-            n_permutations=int(params.get("lr_permutations", 199)),
-            seed=int(params.get("random_state", 42)),
-        )
+        if dataset.metadata.get("synthetic"):
+            communication = [
+                {
+                    "id": f"{pair['ligand']}_{pair['receptor']}",
+                    "name": pair.get("name") or f"{pair['ligand']} → {pair['receptor']}",
+                    "ligand": str(pair["ligand"]).upper(),
+                    "receptor": str(pair["receptor"]).upper(),
+                    "sender": pair.get("sender", ""),
+                    "receiver": pair.get("receiver", ""),
+                    "category": pair.get("category", ""),
+                    "tested": False,
+                    "missing": ["synthetic demo data"],
+                    "score": None,
+                    "p_value": None,
+                    "q_value": None,
+                    "significant": False,
+                }
+                for pair in pack["ligand_receptor_pairs"]
+            ]
+        else:
+            communication = score_ligand_receptor(
+                norm_model,
+                composition_model,
+                coords_model,
+                domains_model,
+                pack["ligand_receptor_pairs"],
+                barcodes=[str(dataset.barcodes[i]) for i in model_idx],
+                k=int(params.get("k_neighbors", 6)),
+                n_permutations=int(params.get("lr_permutations", 199)),
+                seed=int(params.get("random_state", 42)),
+            )
 
     atlas_check: dict[str, Any] | None = None
     if pack.get("atlas_reference"):

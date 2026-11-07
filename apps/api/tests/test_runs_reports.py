@@ -74,6 +74,53 @@ def test_report_needs_approval_before_export(client):
     assert "report.export" in actions
 
 
+def test_gene_layer_is_not_fabricated_for_synthetic_data(client):
+    register(client)
+    run = create_demo_run(client)
+
+    response = client.get(f"/api/v1/runs/{run['id']}/expression?gene=TP53")
+
+    assert response.status_code == 422
+    assert "uploaded Visium" in response.json()["detail"]
+
+
+def test_roi_export_requires_approved_report_and_is_audited(client):
+    register(client)
+    run = create_demo_run(client)
+    run_id = run["id"]
+    payload = client.get(f"/api/v1/runs/{run_id}/results").json()["payload"]
+    barcodes = [spot["barcode"] for spot in payload["spots"][:2]]
+
+    denied = client.post(f"/api/v1/runs/{run_id}/roi-export", json={"barcodes": barcodes})
+    assert denied.status_code == 409
+
+    approved = client.post(f"/api/v1/runs/{run_id}/report/approve", json={"confirm_ruo": True})
+    assert approved.status_code == 200
+    exported = client.post(f"/api/v1/runs/{run_id}/roi-export", json={"barcodes": barcodes})
+    assert exported.status_code == 200
+    assert "text/csv" in exported.headers["content-type"]
+    assert barcodes[0] in exported.text
+
+    actions = [entry["action"] for entry in client.get("/api/v1/org/audit-logs").json()]
+    assert "run.roi_export" in actions
+
+
+def test_map_png_export_requires_approval_and_is_audited(client):
+    register(client)
+    run = create_demo_run(client)
+    run_id = run["id"]
+    metadata = {"width": 1200, "height": 800, "mode": "domain"}
+
+    denied = client.post(f"/api/v1/runs/{run_id}/map-export", json=metadata)
+    assert denied.status_code == 409
+    client.post(f"/api/v1/runs/{run_id}/report/approve", json={"confirm_ruo": True})
+    exported = client.post(f"/api/v1/runs/{run_id}/map-export", json=metadata)
+    assert exported.status_code == 200
+    assert exported.json() == {"ok": True}
+    actions = [entry["action"] for entry in client.get("/api/v1/org/audit-logs").json()]
+    assert "run.map_export" in actions
+
+
 def _add_viewer(org_id: str) -> tuple[str, str]:
     email = f"viewer-{org_id[:8]}@example.com"
     with SessionLocal() as db:

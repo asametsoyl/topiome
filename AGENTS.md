@@ -8,37 +8,32 @@
 
 ## 1. Tek cümlede proje
 
-**Topiome**, spatial transcriptomics verisinden hastalığa özgü doku haritaları üreten, çok kiracılı (multi-tenant) bir **Research Use Only (RUO)** SaaS platformudur.
+**Topiome**, tanımlı perturbasyonlara tek hücre yanıtlarını tahmin etmeyi araştıran bir yazılım projesidir (**Research Use Only, RUO**).
 
-Eski ürün: `glio-cartography` (GBM'e özel, Electron + Python, Teknofest için geliştirildi, yarım kaldı).
-Yeni ürün: hastalıktan bağımsız çekirdek + bilimsel olarak doğrulanmış **hastalık paketleri**.
+Eski ürünler: `glio-cartography` ve spatial-transkriptomik Topiome. Kodları ve küçük validasyon raporları legacy olarak korunuyor; yerel spatial veri 2026-11-07'de temizlendi.
+Yeni yön: görülmemiş perturbasyon ve hücre bağlamlarında yanıt tahmini. İlk H1 aggregate baseline deneyi var; Topiome modeli ve held-out context sonucu yok.
 
 - Çalışma markası: **Topiome** (`topo` = yer/konum, `ome` = bütünlük)
 - Alan adı hedefi: `topiome.com` (şu an boş; tescil/hukuk kontrolü yapılacak)
 - Konumlandırma: **Research Use Only** — teşhis, prognoz veya tedavi kararı iddiası yok.
-- İş modeli: yıllık abonelik (bireysel / laboratuvar / kurumsal) + kurum içi kurulum.
+- İş modeli: belirlenmedi; bilimsel fizibilite ve alıcı ihtiyacı görülmeden fiyatlandırma yapılmaz.
 
 ## 2. Değiştirilemez kurallar (non-negotiables)
 
 1. **RUO sınırı.** Ürün hiçbir yerde teşhis, prognoz, tedavi önerisi veya klinik karar desteği olarak sunulmaz. Her raporda ve pazarlama sayfasında görünür RUO uyarısı bulunur.
 2. **Veri sahipliği.** Gerçek hasta verisi repo'ya, demo seed'e veya loglara girmez. Örnek veriler sentetik ya da kamuya açık / lisanslı verilerdir.
-3. **Benchmark kapısı.** Bir hastalık paketi, `docs/VALIDATION.md` içindeki minimum metrikleri geçmeden "yayında" sayılmaz. Pazarlamada doğruluk iddiası ancak bu kapı geçilince kullanılır.
-4. **Belirsizlik görünürlüğü.** Her spot için güven/belirsizlik skoru üretilir; UI ve raporda gösterilir. "Kesin sonuç" dili kullanılmaz.
-5. **İzlenebilirlik.** Her analiz; pipeline sürümü, disease pack sürümü, referans veri sürümü, parametreler ve yazılım commit'i ile kaydedilir.
+3. **Benchmark kapısı.** Yeni model, `docs/VALIDATION.md` içindeki perturbasyon ve bağlam düzeyindeki held-out kapıları geçmeden başarı iddiası alamaz.
+4. **Belirsizlik görünürlüğü.** Her tahmin için destek, belirsizlik ve kapsam dışı koşullar gösterilir. "Kesin sonuç" dili kullanılmaz.
+5. **İzlenebilirlik.** Her analiz; model/pipeline sürümü, kaynak/lisans, veri hash'i, split, parametreler ve yazılım commit'i ile kaydedilir.
 6. **İnsan onayı.** Rapor yayınlama / dışa aktarma adımında kullanıcı onayı ve audit log vardır.
 
-## 3. Mevcut durum
+## 3. Mevcut durum (2026-11-07)
 
-- Aşama: **Faz 1 — çalışan dikey dilim + gerçek Visium/model + üretim altyapısı**
-- İlk hedef: 6 veri-zengin hastalık paketi (meme, akciğer, kolorektal, prostat, melanom, GBM) + sentetik demo veriyle uçtan uca akış.
-- Gerçek Space Ranger `.h5` / `.mtx` + spatial okuyucu hazır; Wu 2021 meme referansı ve hasta düzeyi GNN domain modeli (beta) bağlı.
-- **Bilimsel durum:** Breast ARI 0.260 < 0.35 kapısı, GBM Ivy GAP diagonal −0.179 / top-1 0.0 → **iki paket de beta**, `validated` değil. Ayrıntı: `docs/VALIDATION.md`, `docs/validation/`.
-- **Test durumu:** analiz 33, API 34 geçiyor; ruff/ESLint/tsc/`next build` temiz.
-- Detaylı yapılanlar/sıradakiler: **`docs/STATUS.md`**
-- Ürün tanımı: **`docs/PRODUCT.md`**
-- Mimari: **`docs/ARCHITECTURE.md`**
-- Doğrulama stratejisi: **`docs/VALIDATION.md`**
-- Hastalık paketleri: **`docs/DISEASE_PACKS.md`**
+- Aşama: perturbasyon yanıtı araştırma fizibilitesi.
+- Topiome adı korunuyor; yeni kayıt ve ücretli ürün erişimi kapalı.
+- Yeni yönde Topiome modeli eğitilmedi; bir public aggregate dataset ve baselinelar üzerinde keşifsel sonuç var, bağımsız deney yok.
+- Eski spatial app ve kodu legacy. Yerel yaklaşık 9.2 GB public/processed spatial dosya temizlendi.
+- Detaylar: `docs/STATUS.md`, `docs/PRODUCT.md`, `docs/VALIDATION.md`, `docs/DATA.md`.
 
 ## 4. Hızlı başlangıç
 
@@ -50,7 +45,6 @@ bash scripts/setup.sh
 npm run dev
 # Web: http://localhost:3000
 # API: http://localhost:8000/docs
-# Demo: demo@topiome.com / demo1234
 ```
 
 Tek tek:
@@ -73,16 +67,7 @@ npm run migrate     # Alembic upgrade head (API açılışta da otomatik çalı�
 
 Üretim kurulumu: `docs/DEPLOY.md` (Docker Compose: Postgres + API + worker + web).
 
-Gerçek veri doğrulaması (veri `data/public` altına indirilir, git'e girmez):
-
-```bash
-cd apps/api
-uv run python -I ../../scripts/validation/build_reference_wu2021.py      # meme scRNA referansı
-uv run --with torch python -I ../../scripts/validation/train_domain_gnn.py  # GNN eğitimi + test
-uv run python -I ../../scripts/validation/validate_gbm_gse331374.py      # GBM + Ivy GAP
-```
-
-Hasta düzeyindeki eğitim/test ayrımı `scripts/validation/wu2021_common.py` içindedir; test hastaları referans, gen seçimi, epoch seçimi ve kalibrasyonda **asla** kullanılmaz.
+Eski spatial kod ve doğrulama raporları `docs/legacy/spatial/` altında tutulur. İlk perturbasyon baseline komutu `python scripts/perturbation/benchmark_vcc_pie_baselines.py`; sonuç tek hücre hattındaki aggregate ölçümle sınırlıdır. Eski `scripts/validation/` komutları yeni yönü doğrulamaz.
 
 ## 5. Repo haritası
 
@@ -94,12 +79,12 @@ topiome/
 │   ├── web/                   ← Next.js 16, React 19, Tailwind 4 (marketing + ürün UI)
 │   └── api/                   ← FastAPI, SQLAlchemy, auth, upload, run, report API
 ├── packages/
-│   ├── analysis/              ← Python analiz motoru (dekonvolüsyon, GNN, benchmark)
-│   └── disease-packs/         ← YAML paketler + şema + sürümlü referanslar (`references/`) + modeller (`models/`)
-├── docs/                      ← ürün, mimari, validasyon (held-out raporları `docs/validation/`), marka, güvenlik, yol haritası
+│   ├── analysis/              ← legacy spatial analiz motoru; perturbasyon modeli henüz yok
+│   └── disease-packs/         ← legacy spatial paketleri
+├── docs/                      ← aktif araştırma planı + `docs/legacy/spatial/` arşivi
 ├── infra/                     ← Docker Compose, Dockerfile, reverse proxy
 ├── scripts/                   ← setup, seed, benchmark, veri indirme
-├── data/                      ← lokal veri (git'e girmez)
+├── data/                      ← `data/perturbation/` yerel verisi (git'e girmez)
 └── tests/                     ← e2e ve entegrasyon testleri
 ```
 
@@ -116,15 +101,13 @@ Next.js (apps/web)  ──rewrite /api/*──▶  FastAPI (apps/api)
   │                                        └── job queue (inline dev / DB worker prod)
   │                                                  │
   │                                                  ▼
-  │                                        packages/analysis
-  │                                        ├── ingest + QC
-  │                                        ├── deconvolution (NNLS baseline → Cell2location/Tangram)
-  │                                        ├── spatial domains (graph smoothing → GraphST/STAGATE)
-  │                                        ├── neighborhood / ligand-receptor
-  │                                        ├── drug-target scoring
-  │                                        └── report builder (HTML → PDF)
+  │                                        Gelecek araştırma akışı (henüz uygulanmadı):
+  │                                        ├── perturbasyon verisi + kontrol eşleştirme
+  │                                        ├── perturbation/context-held-out split
+  │                                        ├── baselines → yayınlanmış yöntemlerle kıyas
+  │                                        └── metrik, belirsizlik ve provenance raporu
   ▼
-Spatial viewer (canvas) + charts + report
+Research preview website; eski spatial workspace legacy
 ```
 
 Detay: `docs/ARCHITECTURE.md`
@@ -150,20 +133,19 @@ Detay: `docs/ARCHITECTURE.md`
 - **Python:** 3.12, ruff + pytest, type hints zorunlu, `uv` kullan.
 - **TypeScript:** strict mode, `any` yasak (kaçınılmazsa gerekçeli), server/client ayrımına dikkat.
 - **API:** Tüm yanıtlar `snake_case`; tarihler ISO-8601 UTC; hatalar `{ "detail": "..." }`.
-- **UI:** Boşluklar 4'ün katı; köşe yarıçapı 12–16px; gölge yerine kenarlık; koyu tema varsayılan.
+- **UI:** Boşluklar 4'ün katı; köşe yarıçapı 12–16px; gölge yerine kenarlık; araştırma önizlemesi açık/paper temalı.
 - **Test:** Yeni iş = en az bir test. Analiz kodu = benchmark fixture'ı.
 - **Dosya adları:** `kebab-case` (TS), `snake_case` (Python).
 - **Sırlar:** `.env` commit edilmez. Örnek değerler `.env.example` içinde.
 
 ## 9. Veri ve model ilkeleri
 
-- Eski sürümdeki düşük doğruluk, tek model + yetersiz veri + validasyonsuz GNN'den kaynaklandı. Yeni yaklaşım:
-  1. **Önce veri:** kamuya açık, lisansı uygun, hasta sayısı ve spot sayısı yüksek veri setleri.
-  2. **Baseline önce:** NNLS / marker-score baseline çalışmadan GNN'e geçilmez.
-  3. **Ensemble + uncertainty:** en az iki dekonvolüsyon yöntemi; spot bazında belirsizlik.
-  4. **Held-out validation:** aynı hastadan değil, ayrı çalışmalardan test.
-  5. **Model card:** her sürüm için veri, metrik, sınırlama, kullanım amacı.
-- Disease pack'ler `packages/disease-packs/*.yaml`; şema `schema.json`; doğrulama `scripts/validate_packs.py`.
+1. Her public veri bileşeni için kaynak, lisans/izin, indirme tarihi, hash ve assay/bağlam metadata'sı kaydedilir. Atlas toplam hücre sayısı kullanılabilir benchmark örneği gibi sunulmaz.
+2. Perturbasyon, kontrol, örnek/batch ve hücre bağlamı eşleştirilmeden model girdisi oluşturulmaz.
+3. Önce no-change, kontrol/bağlam ortalaması ve basit doğrusal baseline'lar kurulur; karmaşık model bunları geçmeden eklenmez.
+4. Bölme hücre seviyesinde rastgele yapılmaz. Görülmemiş perturbasyon ve biyolojik bağlam testleri ayrı raporlanır; deney/batch sızıntısı denetlenir.
+5. Belirsizlik, başarısız bağlamlar ve kapsam dışı koşullar gösterilir. Public benchmark, prospektif deney veya klinik fayda kanıtı değildir.
+6. Veri/model kartı; kaynak, lisans, split, metrik, sınırlama, pipeline sürümü ve commit'i içerir.
 
 ## 10. Ajan çalışma protokolü
 
@@ -182,7 +164,8 @@ Detay: `docs/ARCHITECTURE.md`
 - Python 3.14 sistemde var; bilimsel paketler için **3.12** kullan (`uv`).
 - Ağır analiz bağımlılıkları (`torch`, `scanpy`, `tangram`, `cell2location`) varsayılan kurulumda yok; `pip install -e ".[full]"` ile gelir.
 - Stripe, SMTP ve S3 prod ayarları henüz bağlı değil; arayüzler hazır, gerçek anahtar yok. Kuyruk Postgres tabanlıdır; Redis/RQ ve otomatik retry yok.
-- Bilimsel kapılar: **breast ARI 0.260 < 0.35**, **GBM Ivy GAP diagonal −0.179 / top-1 0.0**. İki paket de beta; "validated" veya klinik doğruluk iddiası yok.
+- Yeni yönde öğrenilmiş Topiome modeli veya bağımsız deney yok. Mevcut H1 aggregate baseline keşifseldir; genelleme/ürün başarısı iddiası değildir.
+- Eski spatial verilerden yaklaşık 9.2 GB temizlendi. Tarihsel raporlar `docs/legacy/spatial/validation/` içinde; eski spatial sonuçlar yeni yönü desteklemez.
 - Marka tescili ve domain satın alımı yapılmadı; `Topiome` çalışma adıdır.
 - exFAT'ta macOS her dosyanın yanına `._*` yazar: Turbopack dosya önbelleği kapalıdır (ADR-015); migration'ları bare `alembic` ile değil `cd apps/api && uv run python -m app.migrate …` ile çalıştır (ADR-011). Docker build de `._*` xattr'ında kırılır; temiz kopya kullan (`docs/DEPLOY.md`).
 - Next.js `rewrites` hedefi (`API_URL`) `next build` anında sabitlenir; farklı portta API için yeniden derle ya da `next dev` kullan.
@@ -197,4 +180,4 @@ Detay: `docs/ARCHITECTURE.md`
 
 ---
 
-_Son güncelleme: 2026-11-06 · Faz 1 + gerçek Visium/model + üretim worker/Docker_
+_Son güncelleme: 2026-11-07 · Perturbasyon yanıtı araştırma fizibilitesi; model henüz yok_

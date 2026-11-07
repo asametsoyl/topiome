@@ -3,7 +3,7 @@ from __future__ import annotations
 from conftest import create_demo_run, register
 
 from app.db import SessionLocal
-from app.models import Run
+from app.models import Run, Sample
 
 
 def _compare(client, a: str, b: str):
@@ -15,6 +15,14 @@ def _set_run(run_id: str, **values) -> None:
         run = db.get(Run, run_id)
         for key, value in values.items():
             setattr(run, key, value)
+        db.commit()
+
+
+def _set_sample(sample_id: str, **values) -> None:
+    with SessionLocal() as db:
+        sample = db.get(Sample, sample_id)
+        for key, value in values.items():
+            setattr(sample, key, value)
         db.commit()
 
 
@@ -125,3 +133,19 @@ def test_compare_warns_on_pack_version_mismatch(client):
     assert data["same_pack"] is True
     assert data["same_pack_version"] is False
     assert any("different versions" in warning for warning in data["warnings"])
+
+
+def test_compare_surfaces_assay_species_and_condition_mismatches(client):
+    register(client)
+    run_a = create_demo_run(client)
+    run_b = create_demo_run(client)
+    _set_sample(run_b["sample"]["id"], platform="xenium", species="mouse", condition="treated")
+
+    data = _compare(client, run_a["id"], run_b["id"]).json()
+
+    assert data["a"]["platform"] == "visium"
+    assert data["b"]["platform"] == "xenium"
+    assert data["b"]["species"] == "mouse"
+    assert any("different assay platforms" in warning for warning in data["warnings"])
+    assert any("different species" in warning for warning in data["warnings"])
+    assert any("different recorded conditions" in warning for warning in data["warnings"])

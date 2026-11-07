@@ -5,6 +5,18 @@ export interface User {
   email: string;
   name: string;
   created_at: string;
+  mfa_enabled: boolean;
+}
+
+export interface MfaSetup {
+  secret: string;
+  otpauth_url: string;
+  qr_svg: string | null;
+}
+
+export interface MfaEnabled {
+  enabled: boolean;
+  recovery_codes: string[];
 }
 
 export interface Organization {
@@ -12,6 +24,26 @@ export interface Organization {
   name: string;
   slug: string;
   plan: string;
+}
+
+export interface Invitation {
+  id: string;
+  email: string;
+  role: Role;
+  expires_at: string;
+  accepted_at: string | null;
+  created_at: string;
+  accept_url?: string | null;
+}
+
+export interface BillingStatus {
+  plan: string;
+  subscription_status: string;
+  renewal_at: string | null;
+  billing_configured: boolean;
+  usage: {
+    resources: Record<string, { used: number; limit: number | null; remaining: number | null }>;
+  };
 }
 
 export interface Me {
@@ -221,6 +253,27 @@ export interface BenchmarkMetrics {
   note: string;
 }
 
+export interface GeneExpressionLayer {
+  gene: string;
+  scale: "log1p(CP10K)";
+  values: Record<string, number>;
+}
+
+export interface RoiGeneResult {
+  n_roi_qc_pass: number;
+  n_background_qc_pass: number;
+  normalization: string;
+  method: "descriptive_mean_difference";
+  genes: Array<{
+    gene: string;
+    delta_mean_log1p_cp10k: number;
+    roi_detected_fraction: number;
+    background_detected_fraction: number;
+    direction: "higher_in_roi" | "higher_outside_roi" | "equal";
+  }>;
+  note: string;
+}
+
 export interface ResultPayload {
   sample_id: string;
   pipeline_version: string;
@@ -283,6 +336,7 @@ export interface Interaction {
   significant: boolean;
   ligand_detected_fraction?: number;
   receptor_detected_fraction?: number;
+  spot_scores?: Record<string, number>;
   by_domain?: Record<string, number>;
   top_domain?: string | null;
 }
@@ -317,6 +371,9 @@ export interface CompareRunSide {
   run_id: string;
   sample_id: string;
   sample_name: string | null;
+  platform: string;
+  species: string;
+  condition: string;
   project_id: string;
   disease_pack: string;
   pack_name: string;

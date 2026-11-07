@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack -p 3000",
     "build": "next build",
+    "e2e": "playwright test",
     "start": "next start -p 3000",
     "lint": "eslint",
     "typecheck": "tsc --noEmit"
@@ -20,6 +21,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.7",
+    "@playwright/test": "^1.65.0",
     "@tailwindcss/postcss": "^4.3.4",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",

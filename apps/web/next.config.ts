@@ -1,7 +1,5 @@
 import type { NextConfig } from "next";
 
-const API_URL = process.env.API_URL ?? "http://127.0.0.1:8000";
-
 // The repo lives on an exFAT disk, where macOS writes "._*" AppleDouble files next to
 // every file. Turbopack's on-disk cache cannot parse those names and the build fails
 // with "Failed to open database". Keep the cache off unless explicitly enabled.
@@ -17,14 +15,6 @@ const nextConfig: NextConfig = {
   },
   poweredByHeader: false,
   allowedDevOrigins: ["127.0.0.1", "localhost"],
-  async rewrites() {
-    return [
-      {
-        source: "/api/:path*",
-        destination: `${API_URL}/api/:path*`,
-      },
-    ];
-  },
   async headers() {
     return [
       {
