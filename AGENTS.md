@@ -11,7 +11,7 @@
 **Topiome**, tanımlı perturbasyonlara tek hücre yanıtlarını tahmin etmeyi araştıran bir yazılım projesidir (**Research Use Only, RUO**).
 
 Eski ürünler: `glio-cartography` ve spatial-transkriptomik Topiome. Kodları ve küçük validasyon raporları legacy olarak korunuyor; yerel spatial veri 2026-11-07'de temizlendi.
-Yeni yön: görülmemiş perturbasyon ve hücre bağlamlarında yanıt tahmini. İlk H1 aggregate baseline deneyi var; Topiome modeli ve held-out context sonucu yok.
+Yeni yön: görülmemiş perturbasyon ve hücre bağlamlarında yanıt tahmini. Dört public benchmarkta basit baselinelar ve ön kayıtlı hesaplamalı testler var; sıfır atış bağlam transferi Orion'da başarısız, pilotla kalibre transfer Tahoe-100M'de mütevazı pozitif. Topiome'un genel modeli, prospektif deneyi veya ticari kanıtı yok.
 
 - Çalışma markası: **Topiome** (`topo` = yer/konum, `ome` = bütünlük)
 - Alan adı hedefi: `topiome.com` (şu an boş; tescil/hukuk kontrolü yapılacak)
@@ -168,7 +168,7 @@ Detay: `docs/ARCHITECTURE.md`
 - Python 3.14 sistemde var; bilimsel paketler için **3.12** kullan (`uv`).
 - Ağır analiz bağımlılıkları (`torch`, `scanpy`, `tangram`, `cell2location`) varsayılan kurulumda yok; `pip install -e ".[full]"` ile gelir.
 - Stripe, SMTP ve S3 prod ayarları henüz bağlı değil; arayüzler hazır, gerçek anahtar yok. Kuyruk Postgres tabanlıdır; Redis/RQ ve otomatik retry yok.
-- Yeni yönde öğrenilmiş Topiome modeli veya bağımsız deney yok. Mevcut H1 aggregate baseline keşifseldir; genelleme/ürün başarısı iddiası değildir.
+- Yeni yönde öğrenilmiş genel Topiome modeli veya bağımsız laboratuvar deneyi yok. Dört public benchmarkta ön kayıtlı hesaplamalı testler var; pilotla kalibre transfer Tahoe-100M'de mütevazı pozitif, sıfır atış transferi Orion'da negatif. Hiçbiri genelleme/ürün başarısı iddiası değildir.
 - Eski spatial verilerden yaklaşık 9.2 GB temizlendi. Tarihsel raporlar `docs/legacy/spatial/validation/` içinde; eski spatial sonuçlar yeni yönü desteklemez.
 - Marka tescili ve domain satın alımı yapılmadı; `Topiome` çalışma adıdır.
 - exFAT'ta macOS her dosyanın yanına `._*` yazar: Turbopack dosya önbelleği kapalıdır (ADR-015); migration'ları bare `alembic` ile değil `cd apps/api && uv run python -m app.migrate …` ile çalıştır (ADR-011). Docker build de `._*` xattr'ında kırılır; temiz kopya kullan (`docs/DEPLOY.md`).
