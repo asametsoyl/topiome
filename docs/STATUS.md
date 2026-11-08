@@ -33,6 +33,7 @@
 - [x] Kayıt ve fiyat vaadi durduruldu; yeni hesaplar geçici olarak kapalı, ücretli model/ürün erişimi iddia edilmiyor.
 - [x] Eski spatial workspace uyarı bandıyla legacy olarak işaretlendi; giriş yapan mevcut kullanıcılar eski kayıtları ayırt edebilir.
 - [x] Docs, metadata ve RUO sayfası yeni bilimsel amaç ve henüz model bulunmadığına göre güncellendi.
+- [x] Tahoe-100M pilot-transfer sonucu landing ve docs metinlerine işlendi; dört benchmark kaynağı, durdurulan sıfır atış hattı ve mütevazı pilot sonucu ayrı ayrı belirtildi.
 
 ### Veri temizliği
 
@@ -69,8 +70,8 @@
 
 | Konu | Durum |
 |---|---|
-| İlk hücre bağlamı ve perturbasyon görevi | H1 hESC CRISPRi (Arc VCC), Replogle-Nadig dört hücre hattı ve X-Atlas/Orion HCT116/HEK293T; görülmemiş bağlam ve görülmemiş perturbasyon ayrı değerlendirilir |
-| Public benchmark verileri | Arc VCC 2025 / PIE aggregate arrays, PIE Replogle-Nadig essential Perturb-seq ve PIE X-Atlas/Orion; lisans/mirror kısıtları kayıtlı |
+| İlk hücre bağlamı ve perturbasyon görevi | H1 hESC CRISPRi (Arc VCC), Replogle-Nadig dört hücre hattı, X-Atlas/Orion HCT116/HEK293T ve Tahoe-100M 50 hücre hattı (ilaç taraması); görülmemiş bağlam ve görülmemiş perturbasyon ayrı değerlendirilir |
+| Public benchmark verileri | Arc VCC 2025 / PIE aggregate arrays, PIE Replogle-Nadig essential Perturb-seq, PIE X-Atlas/Orion ve PIE Tahoe-100M; lisans/mirror kısıtları kayıtlı |
 | Görülmemiş bağlam transferi | Sıfır atış: Replogle içi 3/3, Orion 0/2 (durduruldu). Pilotla kalibre (k=100): Tahoe ön kayıtlı 5/5 geçti, etki ~%2 |
 | Görülmemiş perturbasyon | Keşifsel kontrol negatif; bu veri ve görevde durduruldu |
 | Deney ortağı | Gerekiyor; henüz yok |
@@ -114,4 +115,5 @@
 - `analysis.pilot_transfer` + 9 test (sızıntı testi dahil). Geliştirme Replogle ve Orion'da (açılmış veri) yapıldı; ölçeklenmiş transfer seçildi, low-rank ridge elendi.
 - PIE_jiang incelendi ama bağlam başına 1–39 perturbasyon olduğu için pilot kurgusuna uymadı. Tahoe-100M seçildi; ön kayıt `9a9c118` ile etki değerleri indirilmeden donduruldu.
 - Tahoe etiketleri (~9,3 GB) indirildi, hash'ler doğrulandı; kapı değişmemiş kodla bir kez koşuldu: **geçti** (5/5). Zarar gören 4 çift kaydedildi; Tahoe'da ayar yapılmayacak.
-- Doğrulama: analiz testleri ve ruff (yeni dosyalar) geçti. Web/API dokunulmadı; site metinleri bu sonuçla henüz güncellenmedi.
+- Doğrulama: 63 analiz testi, 43 API testi, ruff, web typecheck, lint (0 hata, 2 mevcut uyarı) ve production build geçti. Site metinleri Tahoe sonucuyla güncellendi.
+- Ortam: harici `/Volumes/SAMSUNG` diski oturum sırasında bağlantıdan düştü ve read-only doğrulama exFAT hatası verdi. Depo GitHub'dan `~/topiome` (APFS) altına alındı; git dışındaki yerel veri dosyaları diske yeniden erişilene kadar yok. Kod ve commit'ler `origin/wip/platform-hardening` üzerinde güvende.

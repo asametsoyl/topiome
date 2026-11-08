@@ -27,11 +27,15 @@ Yeni yön: görülmemiş perturbasyon ve hücre bağlamlarında yanıt tahmini. 
 5. **İzlenebilirlik.** Her analiz; model/pipeline sürümü, kaynak/lisans, veri hash'i, split, parametreler ve yazılım commit'i ile kaydedilir.
 6. **İnsan onayı.** Rapor yayınlama / dışa aktarma adımında kullanıcı onayı ve audit log vardır.
 
-## 3. Mevcut durum (2026-11-07)
+## 3. Mevcut durum (2026-11-08)
 
 - Aşama: perturbasyon yanıtı araştırma fizibilitesi.
 - Topiome adı korunuyor; yeni kayıt ve ücretli ürün erişimi kapalı.
-- Yeni yönde Topiome modeli eğitilmedi; bir public aggregate dataset ve baselinelar üzerinde keşifsel sonuç var, bağımsız deney yok.
+- Dört public perturbation-response benchmark kaynağı var: Arc VCC H1, Replogle-Nadig, X-Atlas/Orion ve Tahoe-100M.
+- Sıfır atış görülmemiş-bağlam transferi Replogle-Nadig içinde 3/3 geçti; bağımsız Orion tekrarı 0/2 sayısal fold ile başarısız oldu ve hat durduruldu.
+- Pilotla kalibre transfer (k=100) hiç açılmamış Tahoe-100M'de ön kayıtlı 5/5 kuralı geçti; etki mütevazı (~%2 RMSE), pilot ölçümü gerektiriyor ve gen sıralaması iyileşmiyor.
+- Görülmemiş perturbasyon keşifsel kontrolü negatif.
+- Topiome'un eğitilmiş/doğrulanmış genel modeli, prospektif deneyi, laboratuvar ortağı veya ticari kanıtı yok.
 - Eski spatial app ve kodu legacy. Yerel yaklaşık 9.2 GB public/processed spatial dosya temizlendi.
 - Detaylar: `docs/STATUS.md`, `docs/PRODUCT.md`, `docs/VALIDATION.md`, `docs/DATA.md`.
 
@@ -160,7 +164,7 @@ Detay: `docs/ARCHITECTURE.md`
 
 ## 11. Bilinen kısıtlar
 
-- Proje **exFAT** diskte (`/Volumes/SAMSUNG/topiome`). Symlink çalışıyor; ancak dosya sistemi yavaş. `node_modules` ve `.venv` büyükse lokal APFS'e taşımayı düşün (symlink ile).
+- Proje normalde **exFAT** diskte (`/Volumes/SAMSUNG/topiome`). Symlink çalışıyor; ancak dosya sistemi yavaş. `node_modules` ve `.venv` büyükse lokal APFS'e taşımayı düşün (symlink ile). 2026-11-08'de harici disk bağlantısı koptu; kurtarma kopyası `~/topiome` (APFS) altında. Git dışındaki veri dosyaları disk yeniden bağlanana kadar erişilemez.
 - Python 3.14 sistemde var; bilimsel paketler için **3.12** kullan (`uv`).
 - Ağır analiz bağımlılıkları (`torch`, `scanpy`, `tangram`, `cell2location`) varsayılan kurulumda yok; `pip install -e ".[full]"` ile gelir.
 - Stripe, SMTP ve S3 prod ayarları henüz bağlı değil; arayüzler hazır, gerçek anahtar yok. Kuyruk Postgres tabanlıdır; Redis/RQ ve otomatik retry yok.
@@ -180,4 +184,4 @@ Detay: `docs/ARCHITECTURE.md`
 
 ---
 
-_Son güncelleme: 2026-11-07 · Perturbasyon yanıtı araştırma fizibilitesi; model henüz yok_
+_Son güncelleme: 2026-11-08 · Perturbasyon yanıtı araştırma fizibilitesi; pilotla kalibre transferde mütevazı pozitif sonuç, genel model henüz yok_

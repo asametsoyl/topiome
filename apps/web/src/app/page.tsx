@@ -185,12 +185,12 @@ export default function HomePage() {
                 <p className="mono-label">Current status</p>
                 <h2 className="display mt-4 text-4xl text-bone sm:text-5xl">A research program, not a finished product.</h2>
               </div>
-              <p className="max-w-md text-xs leading-6 text-bone-dim">Three public perturbation benchmark sources are curated. The in-dataset unseen-context signal did not replicate on an independent dataset, so that line is stopped. Prospective biological validation will require a new research question and an experimental partner.</p>
+              <p className="max-w-md text-xs leading-6 text-bone-dim">Four public perturbation-response benchmark sources are curated. Zero-shot context transfer did not replicate independently, so that line is stopped. A separate pilot-calibrated task passed a pre-registered test on Tahoe-100M with a modest ~2% RMSE gain over the pilot mean. Prospective biological validation will require an experimental partner.</p>
             </div>
             <div className="mt-9 grid gap-3 sm:grid-cols-3">
               {[
-                { title: "Public data", state: "Three benchmark sources", icon: FlaskConical },
-                { title: "Prediction benchmark", state: "Independent replication failed", icon: GitBranch },
+                { title: "Public data", state: "Four benchmark sources", icon: FlaskConical },
+                { title: "Prediction benchmark", state: "Pilot transfer passed · modest", icon: GitBranch },
                 { title: "Independent experiments", state: "Partner required", icon: ShieldCheck },
               ].map((item) => {
                 const Icon = item.icon;

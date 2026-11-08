@@ -4,6 +4,11 @@ Tüm önemli değişiklikler burada. Format: [Keep a Changelog](https://keepacha
 
 ## [Unreleased] — 2026-11-07
 
+### 2026-11-08 — Tahoe pilot-transfer sonucu siteye işlendi
+
+- README, landing ve docs metinleri dört benchmark kaynağını ve mütevazı pilot sonucunu yansıtacak şekilde güncellendi; sıfır atış hattının durdurulduğu, pilot ölçümü gerektiği ve gen sıralamasının iyileşmediği açıkça belirtildi.
+- `AGENTS.md` mevcut durum ve ortam notu güncellendi; harici disk bağlantısı koptuğu için kurtarma kopyası `~/topiome` altında.
+
 ### 2026-11-08 — Pilotla kalibre edilmiş bağlam transferi (Tahoe-100M, ön kayıtlı: geçti)
 
 - `analysis.pilot_transfer`: yeni hücre hattında küçük pilot taramadan hedef ortalaması ve ölçek öğrenip taramanın kalanını tahmin eden yöntem; pilot dışı hedef etiketlerine dokunmadığı testle doğrulanıyor.

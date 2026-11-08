@@ -51,7 +51,7 @@ export default function DocsPage() {
               <article className="rounded-2xl border border-line-soft bg-[#fbfcfb] p-5">
                 <div className="flex items-center gap-2 text-xs font-medium text-bone"><Database className="size-4 text-teal" /> Arc Virtual Cell Atlas</div>
                 <p className="mt-2 text-xs leading-6 text-bone-dim">The initial local benchmark uses Arc VCC 2025 H1 hESC CRISPRi data as PIE-preprocessed aggregate effects: 146 training perturbations and 44 held-out perturbations. The original VCC 2025 component is listed as CC0 by Arc; source, checksums, and the limits of the processed mirror are recorded for this experiment.</p>
-                <p className="mt-3 text-xs leading-6 text-bone-dim">Later benchmarks use PIE Replogle-Nadig (four cell lines) and PIE X-Atlas/Orion (HCT116 and HEK293T). A simple scaled-transfer baseline passed a pre-registered unseen-context gate on three Replogle-Nadig cell lines, but the independent Orion replication failed the numeric gate in both folds. That line is stopped; the in-dataset result is not presented as independent replication.</p>
+                <p className="mt-3 text-xs leading-6 text-bone-dim">Later benchmarks use PIE Replogle-Nadig (four cell lines), PIE X-Atlas/Orion (HCT116 and HEK293T) and PIE Tahoe-100M (50 cell lines × 1,137 drug-dose conditions). Zero-shot context transfer passed a pre-registered in-dataset gate on three Replogle-Nadig cell lines, but independent Orion replication failed the numeric gate in both folds; that line is stopped. A separate pilot-calibrated task, frozen before Tahoe effect values were downloaded, passed all five rules: a 100-condition pilot in the target cell line improved median RMSE by ~2% over the pilot mean, without gene-ranking improvement. The pilot result is modest and is not zero-shot transfer.</p>
                 <a className="mt-3 inline-flex items-center gap-1.5 text-[11px] text-teal hover:text-[#125f50]" href="https://arcinstitute.org/tools/virtualcellatlas" target="_blank" rel="noreferrer">Open the data catalog <ArrowRight className="size-3" /></a>
                 <a className="ml-4 mt-3 inline-flex items-center gap-1.5 text-[11px] text-teal hover:text-[#125f50]" href="https://huggingface.co/datasets/arcinstitute/PIE_arc_vcc_25" target="_blank" rel="noreferrer">Open the processed dataset card <ArrowRight className="size-3" /></a>
               </article>
@@ -86,7 +86,8 @@ export default function DocsPage() {
               <h2 className="display mt-4 text-3xl text-bone sm:text-4xl">What this research cannot claim yet.</h2>
             </div>
             <ul className="space-y-3 text-xs leading-6 text-bone-dim">
-              <li className="rounded-xl border border-line bg-white p-4">No perturbation-response model has been trained or validated by Topiome.</li>
+              <li className="rounded-xl border border-line bg-white p-4">No general perturbation-response model has been trained or validated by Topiome.</li>
+              <li className="rounded-xl border border-line bg-white p-4">The only positive independent result requires a 100-condition pilot measured in the target cell line; zero-shot context transfer remains unsupported.</li>
               <li className="rounded-xl border border-line bg-white p-4">Public benchmark success does not establish causal mechanism, disease translation, or experimental benefit.</li>
               <li className="rounded-xl border border-line bg-white p-4">Predictions depend on perturbation efficiency, cell context, assay, time point, dose, and data quality.</li>
               <li className="rounded-xl border border-line bg-white p-4">Prospective claims require an independent experimental partner and pre-specified readouts.</li>
